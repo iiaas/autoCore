@@ -1,0 +1,72 @@
+on_actions = {
+	on_startup = {
+		effect = {
+			every_country = {
+				if = {
+					limit = { is_ai = no }
+					set_technology_auto = yes
+					every_controlled_state = {
+						set_resistance = 0
+						set_compliance = 60
+						add_resistance_target = -100
+					}
+					add_unit_bonus = {
+						category_army = {
+							fuel_consumption = -1
+							fuel_consumption_factor = -1
+						}
+					}
+				}
+			}
+		}
+	}
+
+	on_state_control_changed = {
+		effect = {
+			if = {
+				limit = { is_ai = no }
+				if = {
+					limit = {
+						FROM.FROM = { is_claimed_by = ROOT }
+					}
+					FROM.FROM = { add_core_of = ROOT }
+				}
+				else = {
+					FROM.FROM = {
+						set_resistance = 0
+						set_compliance = 60
+						add_resistance_target = -100
+					}
+				}
+			}
+		}
+	}
+
+	on_army_leader_daily = {
+		effect = {
+			if = {
+				limit = { FROM = { is_ai = no } }
+				supply_units = 24
+			}
+		}
+	}
+
+	on_daily = {
+		effect = {
+			if = {
+				limit = { is_ai = no }
+				set_technology_auto = yes
+			}
+		}
+	}
+
+	on_deployed_leader_defeated = {
+		effect = {
+			if = {
+				limit = { FROM = { is_ai = no } }
+				set_nationality = FROM
+				add_unit_leader_trait = exiled_leader
+			}
+		}
+	}
+}
