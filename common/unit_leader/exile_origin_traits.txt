@@ -1,0 +1,1823 @@
+# 自动生成：俘获将领特性（纯展示原国籍，图标=复刻GFX_flag_small，无修正）
+leader_traits = {
+	exile_origin_ABK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ADU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_AFA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_AFG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ALB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ALG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ALT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ANG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ANU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_AOI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ARG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ARM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_AST = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ASY = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ATJ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_AUS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_AZR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BAH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BAS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BAY = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BEG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BEL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BHR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BHU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BIA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BLC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BLI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BLR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BLZ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BOL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BOS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BOT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BOU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BRA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BRD = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BRI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BRM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BRN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BSK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BUK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BUL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_BYA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CAM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CAT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CAY = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CBV = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CHA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CHI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CHL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CHM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CHR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CHU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CIN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CIP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CKK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CMR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_COG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_COL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_COR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_COS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CPS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CRC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CRI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CRO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CSA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CUB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CYP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_CZE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DAG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DAH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DDR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DEN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DIP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DJI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DNZ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DOM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_DON = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ECU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_EGY = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ELS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ENG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_EQG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ERI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_EST = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ETH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_EVE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_EZO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_FER = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_FIJ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_FIN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_FOR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_FRA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_FSA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_FSM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GAB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GAL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GAM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GBA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GDC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GDL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GEN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GEO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GER = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GHA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GLC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GNA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GNB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GOW = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GRE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GRN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GSM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GUA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GUM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GXC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_GYA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HAI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HAW = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HBC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HES = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HOL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HON = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HRZ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HUN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_HYD = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_IAS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ICE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_IMO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_INC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_INS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_INU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_IRE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_IRQ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ISR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ITA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ITZ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_IVO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_JAM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_JAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_JAP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_JOR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KAL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KAS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KAT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KAZ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KBK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KEN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KHA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KHI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KHL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KHM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KKP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KLT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KOL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KOM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KOR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KOS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KSH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KUB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KUM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KUR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KUW = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_KYR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LAO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LAT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LBA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LBV = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LEB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LIB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LIT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_LUX = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MAC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MAD = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MAL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MAY = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MEK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MEL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MEN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MEX = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MIS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MLD = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MLI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MLT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MLW = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MNT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MOL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MON = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MOR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MPU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MRT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MYS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_MZB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NAH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NAV = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NEN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NEP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NGA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NGR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NIC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NIR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NMB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NOA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NOR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NWF = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NXM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_NZL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_OCC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_OKN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_OMA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ORO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_OVO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PAK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PAL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PAP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PER = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PHI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PLU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PNG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_POK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_POL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_POR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PRC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PRE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PRU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PSH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PSR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_PUE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_QAT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_QEM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_QUE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RAA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RAJ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RAP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RAS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RCG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RCO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RGB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RHD = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RHI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RIF = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RIG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RJP = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RKV = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RNA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RNG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ROA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ROM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RUS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RUT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_RWA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SAB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SAF = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SAM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SAR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SAU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SAX = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SCO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SDL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SEN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SER = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SHL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SHX = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SIA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SIC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SID = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SIE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SIK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SIL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SIN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SKK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SLO = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SLV = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SMI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SND = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SNG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SOK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SOL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SOM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SOV = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SPM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SPR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SRL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SSI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SUD = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SUR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SWE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SWI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_SYR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TAH = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TAJ = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TAT = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TAY = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_THU = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TIB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TIG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TML = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TMS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TNE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TOG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TOS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TRA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TRI = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TTS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TUN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TUR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_TZN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_UAE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_UBD = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_UDM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_UGA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_UKR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_URG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_USA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_USB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_UZB = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_VAN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_VEN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_VGE = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_VIN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_VLA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_VOL = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_WES = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_WGR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_WIS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_WLA = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_WLS = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_WPG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_WUR = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_XIC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_XSM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_YAK = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_YAM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_YEM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_YUC = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_YUG = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_YUN = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ZAM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+	exile_origin_ZIM = {
+		type = all
+		trait_type = personality_trait
+		new_commander_weight = { factor = 0 }
+	}
+}
