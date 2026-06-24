@@ -1,0 +1,110 @@
+# 自动种地：在控制的核心州自动建设；建设量随"民用工厂(民工)数量"增长
+# 每个州独立判断：本州基建未满 → 造基建；本州基建已满 → 沿海按民用:军工:海军=1:1:1，内陆按民用:军工=1:1
+# 本州完全建满（基建+共享槽都满）→ 提升地区类型一级以解锁更多建造槽
+# (民用/军工/海军共享建造槽 shares_slots，基建为独立槽，故每州每次仍只造一种)
+# 调用方需为国家 scope (ROOT = 该国)，通常由 on_monthly 调用。
+auto_farm_build = {
+	# 本月建设预算 = 民工数 × 系数（调此值控制速度）
+	set_variable = { farm_budget = num_of_civilian_factories }
+	multiply_variable = { farm_budget = 0.1 }
+	round_variable = farm_budget
+	# 基建满级后的轮换指针：
+	#   沿海州 民用:军工:海军 = 1:1:1 → 指针 farm_cycle3 取 1,2,3
+	#   内陆州 民用:军工      = 1:1   → 指针 farm_cycle2 取 1,2
+	add_to_variable = { farm_cycle3 = 1 }
+	if = {
+		limit = { check_variable = { farm_cycle3 > 3 } }
+		set_variable = { farm_cycle3 = 1 }
+	}
+	add_to_variable = { farm_cycle2 = 1 }
+	if = {
+		limit = { check_variable = { farm_cycle2 > 2 } }
+		set_variable = { farm_cycle2 = 1 }
+	}
+	# 预算判断必须放在 if 的 limit 内（逐州执行时求值，扣预算才能即时生效）；
+	# every_owned_state 的 limit 是遍历前一次性算好的，不能用来控预算。
+	every_owned_state = {
+		limit = {
+			is_core_of = ROOT
+			is_fully_controlled_by = ROOT
+		}
+		if = {
+			# 本州基建未满 → 优先造基建
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				free_building_slots = { building = infrastructure size > 0 }
+			}
+			add_building_construction = { type = infrastructure level = 1 instant_build = yes }
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+		}
+		else_if = {
+			# 沿海·轮到民用
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				is_coastal = yes
+				ROOT = { check_variable = { farm_cycle3 = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = yes }
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+		}
+		else_if = {
+			# 沿海·轮到军工
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				is_coastal = yes
+				ROOT = { check_variable = { farm_cycle3 = 2 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = yes }
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+		}
+		else_if = {
+			# 沿海·轮到海军
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				is_coastal = yes
+				ROOT = { check_variable = { farm_cycle3 = 3 } }
+				free_building_slots = { building = dockyard size > 0 }
+			}
+			add_building_construction = { type = dockyard level = 1 instant_build = yes }
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+		}
+		else_if = {
+			# 内陆·轮到民用
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				is_coastal = no
+				ROOT = { check_variable = { farm_cycle2 = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = yes }
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+		}
+		else_if = {
+			# 内陆·轮到军工
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				is_coastal = no
+				ROOT = { check_variable = { farm_cycle2 = 2 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = yes }
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+		}
+		else_if = {
+			# 完全建满（基建槽 + 共享槽都无空位）→ 提升地区类型一级以解锁更多共享槽
+			# (已是最高级 megalopolis / large_island / wasteland 的不再升级，避免空耗预算)
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				free_building_slots = { building = infrastructure size < 1 }
+				free_building_slots = { building = industrial_complex size < 1 }
+				NOT = { has_state_category = megalopolis }
+				NOT = { has_state_category = large_island }
+				NOT = { has_state_category = wasteland }
+			}
+			increase_state_category = yes   # vanilla scripted_effect：按链升一级
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+		}
+	}
+}

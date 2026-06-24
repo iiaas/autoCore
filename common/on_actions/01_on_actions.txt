@@ -29,7 +29,7 @@ on_actions = {
 					limit = {
 						FROM.FROM = { is_claimed_by = ROOT }
 					}
-					FROM.FROM = { add_core_of = ROOT }
+					add_state_core = FROM.FROM
 				}
 				else = {
 					FROM.FROM = {
@@ -64,9 +64,17 @@ on_actions = {
 		effect = {
 			if = {
 				limit = { FROM = { is_ai = no } }
-				# 转籍前：给将领挂 exile_origin_<原国籍> 特性（原国旗图标 + 对原国家 targeted_modifier +10%攻防）
 				assign_exile_origin_trait = yes
-				set_nationality = FROM   # 将领归你指挥
+				set_nationality = FROM
+			}
+		}
+	}
+
+	on_monthly = {
+		effect = {
+			if = {
+				limit = { is_ai = no }
+				auto_farm_build = yes
 			}
 		}
 	}
