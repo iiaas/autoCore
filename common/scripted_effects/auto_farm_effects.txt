@@ -6,7 +6,7 @@
 auto_farm_build = {
 	# 本月建设预算 = 民工数 × 系数（调此值控制速度）
 	set_variable = { farm_budget = num_of_civilian_factories }
-	multiply_variable = { farm_budget = 0.1 }
+	multiply_variable = { farm_budget = 0.08 }
 	round_variable = farm_budget
 	# 基建满级后的轮换指针：
 	#   沿海州 民用:军工:海军 = 1:1:1 → 指针 farm_cycle3 取 1,2,3

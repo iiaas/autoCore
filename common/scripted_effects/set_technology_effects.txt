@@ -466,56 +466,58 @@ complete_special_project_1945 = {
 
 set_technology_auto = {
 	set_technology_before_1936 = yes
-	set_technology_1936 = yes
-	
 	if = {
 		limit = { date > 1936.1.1 }
+		set_technology_1936 = yes
 		complete_special_project_1936 = yes
-		set_technology_1937 = yes
 	}
 	if = {
 		limit = { date > 1937.1.1 }
+		set_technology_1937 = yes
 		complete_special_project_1937 = yes
-		set_technology_1938 = yes
 	}
 	if = {
 		limit = { date > 1938.1.1 }
+		set_technology_1938 = yes
 		complete_special_project_1938 = yes
-		set_technology_1939 = yes
 	}
 	if = {
 		limit = { date > 1939.1.1 }
+		set_technology_1939 = yes
 		complete_special_project_1939 = yes
-		set_technology_1940 = yes
 	}
 	if = {
 		limit = { date > 1940.1.1 }
+		set_technology_1940 = yes
 		complete_special_project_1940 = yes
-		set_technology_1941 = yes
 	}
 	if = {
 		limit = { date > 1941.1.1 }
+		set_technology_1941 = yes
 		complete_special_project_1941 = yes
-		set_technology_1942 = yes
 	}
 	if = {
 		limit = { date > 1942.1.1 }
+		set_technology_1942 = yes
 		complete_special_project_1942 = yes
-		set_technology_1943 = yes
 	}
 	if = {
 		limit = { date > 1943.1.1 }
+		set_technology_1943 = yes
 		complete_special_project_1943 = yes
-		set_technology_1944 = yes
 	}
 	if = {
 		limit = { date > 1944.1.1 }
+		set_technology_1944 = yes
 		complete_special_project_1944 = yes
-		set_technology_1945 = yes
 	}
 	if = {
 		limit = { date > 1945.1.1 }
+		set_technology_1945 = yes
 		complete_special_project_1945 = yes
+	}
+	if = {
+		limit = { date > 1946.1.1 }
 		set_technology_1946 = yes
 	}
 }
