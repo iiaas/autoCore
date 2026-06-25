@@ -4,19 +4,7 @@ on_actions = {
 			every_country = {
 				if = {
 					limit = { is_ai = no }
-					set_technology_auto = yes
-					create_equipment_designs = yes
-					every_controlled_state = {
-						set_resistance = 0
-						set_compliance = 60
-						add_resistance_target = -100
-					}
-					add_unit_bonus = {
-						category_army = {
-							fuel_consumption = -1
-							fuel_consumption_factor = -1
-						}
-					}
+					player_startup_effects = yes
 				}
 			}
 		}

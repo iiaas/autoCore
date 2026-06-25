@@ -1867,6 +1867,7 @@ create_equipment_designs = {
 			fixed_auxiliary_weapon_slot_1 = aircraft_cannon_1_2x
 			fixed_main_weapon_slot = bomb_locks
 			special_type_slot_1 = dive_brakes_small
+			special_type_slot_2 = empty
 		}
 	}
 	create_equipment_variant = {
@@ -1940,6 +1941,22 @@ create_equipment_designs = {
 			special_type_slot_2 = fuel_tanks_large
 			special_type_slot_3 = air_ground_radar_1
 			special_type_slot_4 = bomb_sights_1
+		}
+	}
+}
+
+player_startup_effects = {
+	set_technology_auto = yes
+	create_equipment_designs = yes
+	every_controlled_state = {
+		set_resistance = 0
+		set_compliance = 60
+		add_resistance_target = -100
+	}
+	add_unit_bonus = {
+		category_army = {
+			fuel_consumption = -1
+			fuel_consumption_factor = -1
 		}
 	}
 }
