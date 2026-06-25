@@ -136,17 +136,10 @@ auto_farm_build = {
 			increase_state_category = yes   # vanilla scripted_effect：按链升一级
 			ROOT = { subtract_from_variable = { farm_budget = 1 } }
 		}
-		else_if = {
-			# 完全建满且已达最高地区类型(无法再升级) → 按国家资源缺口把资源补到本州(缺多少补多少)
+		if = {
+			# 按国家资源缺口把资源补到本州(缺多少补多少)
 			# add_resource 不接受变量 amount，故用 while_loop_effect 按 1 步逐量补；补完清零，避免同月其它建满州重复补
 			limit = {
-				free_building_slots = { building = infrastructure size < 1 }
-				free_building_slots = { building = industrial_complex size < 1 }
-				OR = {
-					has_state_category = megalopolis
-					has_state_category = large_island
-					has_state_category = wasteland
-				}
 				OR = {
 					ROOT = { check_variable = { def_oil > 0 } }
 					ROOT = { check_variable = { def_aluminium > 0 } }

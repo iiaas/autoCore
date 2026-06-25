@@ -62,16 +62,6 @@ on_actions = {
 		}
 	}
 
-	on_deployed_leader_defeated = {
-		effect = {
-			if = {
-				limit = { FROM = { is_ai = no } }
-				assign_exile_origin_trait = yes
-				set_nationality = FROM
-			}
-		}
-	}
-
 	on_monthly = {
 		effect = {
 			if = {
