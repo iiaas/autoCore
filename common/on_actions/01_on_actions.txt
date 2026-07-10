@@ -1,15 +1,4 @@
 on_actions = {
-	on_startup = {
-		effect = {
-			every_country = {
-				if = {
-					limit = { is_ai = no }
-					player_startup_effects = yes
-				}
-			}
-		}
-	}
-
 	on_state_control_changed = {
 		effect = {
 			if = {
@@ -24,7 +13,6 @@ on_actions = {
 					FROM.FROM = {
 						set_resistance = 0
 						set_compliance = 60
-						add_resistance_target = -100
 					}
 				}
 			}
@@ -46,6 +34,15 @@ on_actions = {
 				limit = { is_ai = no }
 				set_technology_auto = yes
 				add_mastery = { amount = 1 }
+				if = {
+					limit = { has_idea = autocore_army_no_fuel }
+					modify_timed_idea = { idea = autocore_army_no_fuel days = 1 }
+					create_equipment_designs = yes
+					enable_tactic = tactic_breakthrough
+				}
+				else = {
+					add_timed_idea = { idea = autocore_army_no_fuel days = 2 }
+				}
 			}
 		}
 	}
