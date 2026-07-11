@@ -34,6 +34,46 @@ on_actions = {
 				limit = { is_ai = no }
 				set_technology_auto = yes
 				add_mastery = { amount = 1 }
+				# 月初完成国策的次日：给下月要自动完成的国策打高亮（与完成分开执行才能显示）
+				if = {
+					limit = {
+						# days > 0：至少隔一天，确保完成已结算、shine 不被清掉
+						has_country_flag = { flag = autocore_focus_shine_pending days > 0 }
+					}
+					if = {
+						limit = { has_focus_tree = japan_wtt_focus }
+						auto_focus_complete_jap_shine = yes
+					}
+					else_if = {
+						limit = { has_focus_tree = german_focus }
+						auto_focus_complete_ger_shine = yes
+					}
+					else_if = {
+						limit = { has_focus_tree = french_focus }
+						auto_focus_complete_fra_shine = yes
+					}
+					else_if = {
+						limit = { has_focus_tree = italian_focus }
+						auto_focus_complete_ita_shine = yes
+					}
+					else_if = {
+						limit = { has_focus_tree = british_focus }
+						auto_focus_complete_eng_shine = yes
+					}
+					else_if = {
+						limit = { has_focus_tree = usa_focus }
+						auto_focus_complete_usa_shine = yes
+					}
+					else_if = {
+						limit = { has_focus_tree = china_nationalist_sea_focus }
+						auto_focus_complete_chi_sea_shine = yes
+					}
+					else_if = {
+						limit = { has_focus_tree = china_communist_focus_sea }
+						auto_focus_complete_prc_sea_shine = yes
+					}
+					clr_country_flag = autocore_focus_shine_pending
+				}
 				if = {
 					limit = { has_idea = autocore_army_no_fuel }
 					modify_timed_idea = { idea = autocore_army_no_fuel days = 1 }
@@ -53,6 +93,51 @@ on_actions = {
 			if = {
 				limit = { is_ai = no }
 				auto_farm_build = yes
+				# 每月每个 MIO 自动解锁一个未完成特性
+				auto_mio_complete_trait = yes
+				# 自动完成国策：优先完成带高亮的目标国策；次日再高亮下月目标
+				# （高亮与完成必须分开执行，否则新高亮会被同 tick 的完成结算清掉，参考原版核心圈事件）
+				# 带互斥选项的国策不自动完成，路线由玩家手动选择
+				if = {
+					limit = { has_focus_tree = japan_wtt_focus }
+					auto_focus_complete_jap = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
+				else_if = {
+					limit = { has_focus_tree = german_focus }
+					auto_focus_complete_ger = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
+				else_if = {
+					limit = { has_focus_tree = french_focus }
+					auto_focus_complete_fra = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
+				else_if = {
+					limit = { has_focus_tree = italian_focus }
+					auto_focus_complete_ita = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
+				else_if = {
+					limit = { has_focus_tree = british_focus }
+					auto_focus_complete_eng = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
+				else_if = {
+					limit = { has_focus_tree = usa_focus }
+					auto_focus_complete_usa = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
+				else_if = {
+					limit = { has_focus_tree = china_nationalist_sea_focus }
+					auto_focus_complete_chi_sea = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
+				else_if = {
+					limit = { has_focus_tree = china_communist_focus_sea }
+					auto_focus_complete_prc_sea = yes
+					set_country_flag = { flag = autocore_focus_shine_pending days = 3 value = 1 }
+				}
 			}
 		}
 	}
