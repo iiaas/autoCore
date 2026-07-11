@@ -5,14 +5,16 @@ ideas = {
 			allowed_civil_war = { always = yes }
 			removal_cost = -1
 			modifier = {
+				army_fuel_capacity_factor = -1
 				army_fuel_consumption_factor = -1
 				air_fuel_consumption_factor = -1
 				navy_fuel_consumption_factor = -1
 				resistance_target = -1
 				compliance_gain = 0.05
-				experience_gain_destroyer_training_factor = 1000
-				special_forces_cap_flat = 1000
+				special_forces_cap = 100
+				subjects_autonomy_gain = -500
 				tactic_breakthrough_preferred_weight_factor = 1000
+				tactic_backhand_blow_preferred_weight_factor = 1000
 				tactic_grand_banzai_charge_preferred_weight_factor = 1000
 			}
 		}

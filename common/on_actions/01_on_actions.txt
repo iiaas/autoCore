@@ -37,11 +37,12 @@ on_actions = {
 				if = {
 					limit = { has_idea = autocore_army_no_fuel }
 					modify_timed_idea = { idea = autocore_army_no_fuel days = 1 }
-					create_equipment_designs = yes
-					enable_tactic = tactic_breakthrough
 				}
 				else = {
 					add_timed_idea = { idea = autocore_army_no_fuel days = 2 }
+					create_equipment_designs = yes
+					unlock_tactic = tactic_breakthrough
+					unlock_tactic = tactic_backhand_blow
 				}
 			}
 		}

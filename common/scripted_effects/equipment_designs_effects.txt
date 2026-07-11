@@ -385,86 +385,6 @@ create_equipment_designs = {
 		}
 	}
 	create_equipment_variant = {
-		name = "叠甲重坦"
-		type = heavy_tank_chassis_2
-		icon = "GFX_GER_improved_heavy_tank_medium"
-		modules = {
-			armor_type_slot = tank_welded_armor
-			engine_type_slot = tank_gasoline_engine
-			main_armament_slot = tank_medium_cannon_2
-			special_type_slot_1 = armor_skirts
-			special_type_slot_2 = easy_maintenance
-			special_type_slot_3 = sloped_armor
-			special_type_slot_4 = tank_radio_1
-			suspension_type_slot = tank_torsion_bar_suspension
-			turret_type_slot = tank_medium_three_man_tank_turret
-		}
-		upgrades = {
-			tank_nsb_armor_upgrade = 14
-			tank_nsb_engine_upgrade = 0
-		}
-	}
-	create_equipment_variant = {
-		name = "叠甲重坦"
-		type = heavy_tank_chassis_2
-		icon = "GFX_GER_improved_heavy_tank_medium"
-		modules = {
-			armor_type_slot = tank_welded_armor
-			engine_type_slot = tank_gasoline_engine
-			main_armament_slot = tank_medium_cannon_2
-			special_type_slot_1 = armor_skirts
-			special_type_slot_2 = easy_maintenance
-			special_type_slot_3 = sloped_armor
-			special_type_slot_4 = tank_radio_2
-			suspension_type_slot = tank_torsion_bar_suspension
-			turret_type_slot = tank_medium_three_man_tank_turret
-		}
-		upgrades = {
-			tank_nsb_armor_upgrade = 14
-			tank_nsb_engine_upgrade = 0
-		}
-	}
-	create_equipment_variant = {
-		name = "43叠甲重坦"
-		type = heavy_tank_chassis_3
-		icon = "GFX_GER_advanced_heavy_tank_medium"
-		modules = {
-			armor_type_slot = tank_welded_armor
-			engine_type_slot = tank_gasoline_engine
-			main_armament_slot = tank_high_velocity_cannon_2
-			special_type_slot_1 = easy_maintenance
-			special_type_slot_2 = sloped_armor
-			special_type_slot_3 = armor_skirts
-			special_type_slot_4 = tank_radio_3
-			suspension_type_slot = tank_torsion_bar_suspension
-			turret_type_slot = tank_medium_three_man_tank_turret
-		}
-		upgrades = {
-			tank_nsb_armor_upgrade = 17
-			tank_nsb_engine_upgrade = 3
-		}
-	}
-	create_equipment_variant = {
-		name = "43叠甲重坦20"
-		type = heavy_tank_chassis_3
-		icon = "GFX_GER_advanced_heavy_tank_medium"
-		modules = {
-			armor_type_slot = tank_welded_armor
-			engine_type_slot = tank_gasoline_engine
-			main_armament_slot = tank_high_velocity_cannon_2
-			special_type_slot_1 = easy_maintenance
-			special_type_slot_2 = sloped_armor
-			special_type_slot_3 = armor_skirts
-			special_type_slot_4 = tank_radio_3
-			suspension_type_slot = tank_torsion_bar_suspension
-			turret_type_slot = tank_medium_three_man_tank_turret
-		}
-		upgrades = {
-			tank_nsb_armor_upgrade = 20
-			tank_nsb_engine_upgrade = 6
-		}
-	}
-	create_equipment_variant = {
 		name = "42坦歼"
 		type = medium_tank_destroyer_chassis_1
 		icon = "GFX_GER_basic_medium_art"
@@ -545,26 +465,6 @@ create_equipment_designs = {
 		}
 	}
 	create_equipment_variant = {
-		name = "“猎虎”坦克歼击车"
-		type = heavy_tank_destroyer_chassis_3
-		icon = "GFX_GER_advanced_heavy_td"
-		modules = {
-			armor_type_slot = tank_riveted_armor
-			engine_type_slot = tank_diesel_engine
-			main_armament_slot = tank_high_velocity_cannon_3
-			special_type_slot_1 = secondary_turret_small_cannon
-			special_type_slot_2 = secondary_turret_small_cannon
-			special_type_slot_3 = secondary_turret_small_cannon
-			special_type_slot_4 = secondary_turret_small_cannon
-			suspension_type_slot = tank_torsion_bar_suspension
-			turret_type_slot = tank_heavy_three_man_tank_turret
-		}
-		upgrades = {
-			tank_nsb_armor_upgrade = 0
-			tank_nsb_engine_upgrade = 0
-		}
-	}
-	create_equipment_variant = {
 		name = "轻自火39"
 		type = light_tank_artillery_chassis_0
 		icon = "GFX_GER_improved_light_art"
@@ -597,26 +497,6 @@ create_equipment_designs = {
 		upgrades = {
 			tank_nsb_armor_upgrade = 0
 			tank_nsb_engine_upgrade = 4
-		}
-	}
-	create_equipment_variant = {
-		name = "叠甲重坦34"
-		type = heavy_tank_chassis_1
-		icon = "GFX_GER_basic_heavy_tank_medium"
-		modules = {
-			armor_type_slot = tank_welded_armor
-			engine_type_slot = tank_gasoline_engine
-			main_armament_slot = tank_medium_cannon_2
-			special_type_slot_1 = easy_maintenance
-			special_type_slot_2 = sloped_armor
-			special_type_slot_3 = armor_skirts
-			special_type_slot_4 = tank_radio_1
-			suspension_type_slot = tank_torsion_bar_suspension
-			turret_type_slot = tank_medium_three_man_tank_turret
-		}
-		upgrades = {
-			tank_nsb_armor_upgrade = 14
-			tank_nsb_engine_upgrade = 1
 		}
 	}
 	create_equipment_variant = {
@@ -1514,7 +1394,7 @@ create_equipment_designs = {
 		}
 	}
 	create_equipment_variant = {
-		name = "Ju 87 G “大炮鸟”"
+		name = "40多功能"
 		type = small_plane_cas_airframe_2
 		icon = "GFX_GER_CAS2_medium"
 		modules = {
@@ -1565,34 +1445,7 @@ create_equipment_designs = {
 			special_type_slot_2 = fuel_tanks_small
 		}
 	}
-	create_equipment_variant = {
-		name = "Ju 87 G “大炮鸟”"
-		type = small_plane_cas_airframe_2
-		icon = "GFX_GER_CAS2_medium"
-		modules = {
-			engine_type_slot = engine_3_1x
-			fixed_auxiliary_weapon_slot_1 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_2 = heavy_mg_4x
-			fixed_main_weapon_slot = bomb_locks
-			special_type_slot_1 = armor_plate_small
-			special_type_slot_2 = fuel_tanks_small
-			special_type_slot_3 = dive_brakes_small
-		}
-	}
-	create_equipment_variant = {
-		name = "Ju 87 G “大炮鸟”"
-		type = small_plane_cas_airframe_2
-		icon = "GFX_GER_CAS2_medium"
-		modules = {
-			engine_type_slot = engine_3_1x
-			fixed_auxiliary_weapon_slot_1 = heavy_bomb_locks
-			fixed_auxiliary_weapon_slot_2 = bomb_locks
-			fixed_main_weapon_slot = heavy_bomb_locks
-			special_type_slot_1 = fuel_tanks_small
-			special_type_slot_2 = fuel_tanks_small
-		}
-	}
-	create_equipment_variant = {
+		create_equipment_variant = {
 		name = "侦察机"
 		type = medium_plane_scout_plane_airframe_1
 		icon = "GFX_GER_tactical_bomber1_medium"
@@ -1651,24 +1504,6 @@ create_equipment_designs = {
 		}
 	}
 	create_equipment_variant = {
-		name = "40战略"
-		type = large_plane_airframe_2
-		icon = "GFX_GER_strategic_bomber2_medium"
-		modules = {
-			engine_type_slot = engine_3_6x
-			fixed_auxiliary_weapon_slot_1 = large_bomb_bay
-			fixed_auxiliary_weapon_slot_2 = large_bomb_bay
-			fixed_auxiliary_weapon_slot_3 = large_bomb_bay
-			fixed_auxiliary_weapon_slot_4 = large_bomb_bay
-			fixed_main_weapon_slot = large_bomb_bay
-			special_type_slot_1 = self_sealing_fuel_tanks_large
-			special_type_slot_2 = fuel_tanks_large
-			special_type_slot_3 = fuel_tanks_large
-			special_type_slot_4 = air_ground_radar_2
-			special_type_slot_5 = bomb_sights_2
-		}
-	}
-	create_equipment_variant = {
 		name = "44舰载海军轰炸机"
 		type = cv_small_plane_naval_bomber_airframe_3
 		icon = "GFX_FRA_early_fighter_medium"
@@ -1692,93 +1527,6 @@ create_equipment_designs = {
 			fixed_auxiliary_weapon_slot_3 = armor_piercing_bomb_locks
 			fixed_main_weapon_slot = armor_piercing_bomb_locks
 			special_type_slot_1 = dive_brakes_small
-		}
-	}
-	create_equipment_variant = {
-		name = "36重型战斗机（机炮）"
-		type = medium_plane_fighter_airframe_1
-		icon = "GFX_GER_heavy_fighter1_medium"
-		modules = {
-			engine_type_slot = engine_2_2x
-			fixed_auxiliary_weapon_slot_1 = aircraft_cannon_1_2x
-			fixed_auxiliary_weapon_slot_2 = light_mg_4x
-			fixed_auxiliary_weapon_slot_3 = light_mg_4x
-			fixed_main_weapon_slot = aircraft_cannon_1_2x
-			special_type_slot_1 = self_sealing_fuel_tanks_medium
-		}
-	}
-	create_equipment_variant = {
-		name = "36重型战斗机（轻机枪）"
-		type = medium_plane_fighter_airframe_1
-		icon = "GFX_GER_heavy_fighter1_medium"
-		modules = {
-			engine_type_slot = engine_2_2x
-			fixed_auxiliary_weapon_slot_1 = light_mg_4x
-			fixed_auxiliary_weapon_slot_2 = light_mg_4x
-			fixed_auxiliary_weapon_slot_3 = light_mg_4x
-			fixed_main_weapon_slot = light_mg_4x
-			special_type_slot_1 = self_sealing_fuel_tanks_medium
-			special_type_slot_2 = fuel_tanks_medium
-		}
-	}
-	create_equipment_variant = {
-		name = "重战"
-		type = medium_plane_fighter_airframe_2
-		icon = "GFX_GER_heavy_fighter2_medium"
-		modules = {
-			engine_type_slot = engine_3_2x
-			fixed_auxiliary_weapon_slot_1 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_2 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_3 = heavy_mg_4x
-			fixed_main_weapon_slot = heavy_mg_4x
-			special_type_slot_1 = self_sealing_fuel_tanks_medium
-			special_type_slot_2 = hmg_defense_turret_2x
-		}
-	}
-	create_equipment_variant = {
-		name = "重战多功能"
-		type = medium_plane_fighter_airframe_2
-		icon = "GFX_GER_heavy_fighter2_medium"
-		modules = {
-			engine_type_slot = engine_3_2x
-			fixed_auxiliary_weapon_slot_1 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_2 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_3 = rocket_rails
-			fixed_main_weapon_slot = heavy_mg_4x
-			special_type_slot_1 = self_sealing_fuel_tanks_medium
-			special_type_slot_2 = fuel_tanks_medium
-			special_type_slot_3 = hmg_defense_turret_2x
-		}
-	}
-	create_equipment_variant = {
-		name = "44重战"
-		type = medium_plane_fighter_airframe_3
-		icon = "GFX_GER_heavy_fighter3_medium"
-		modules = {
-			engine_type_slot = engine_4_2x
-			fixed_auxiliary_weapon_slot_1 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_2 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_3 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_4 = heavy_mg_4x
-			fixed_main_weapon_slot = heavy_mg_4x
-			special_type_slot_1 = self_sealing_fuel_tanks_medium
-			special_type_slot_2 = hmg_defense_turret_2x
-		}
-	}
-	create_equipment_variant = {
-		name = "44多功能"
-		type = medium_plane_fighter_airframe_3
-		icon = "GFX_GER_heavy_fighter3_medium"
-		modules = {
-			engine_type_slot = engine_4_2x
-			fixed_auxiliary_weapon_slot_1 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_2 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_3 = heavy_mg_4x
-			fixed_auxiliary_weapon_slot_4 = rocket_rails
-			fixed_main_weapon_slot = heavy_mg_4x
-			special_type_slot_1 = self_sealing_fuel_tanks_medium
-			special_type_slot_2 = cannon_defense_turret_2x
-			special_type_slot_3 = lmg_defense_turret
 		}
 	}
 	create_equipment_variant = {
@@ -1896,25 +1644,6 @@ create_equipment_designs = {
 		}
 	}
 	create_equipment_variant = {
-		name = "44战略轰炸机"
-		type = large_plane_airframe_3
-		icon = "GFX_GER_strategic_bomber3_medium"
-		modules = {
-			engine_type_slot = engine_4_6x
-			fixed_auxiliary_weapon_slot_1 = large_bomb_bay
-			fixed_auxiliary_weapon_slot_2 = large_bomb_bay
-			fixed_auxiliary_weapon_slot_3 = large_bomb_bay
-			fixed_auxiliary_weapon_slot_4 = large_bomb_bay
-			fixed_main_weapon_slot = large_bomb_bay
-			special_type_slot_1 = self_sealing_fuel_tanks_large
-			special_type_slot_2 = fuel_tanks_large
-			special_type_slot_3 = fuel_tanks_large
-			special_type_slot_4 = radio_navigation_2
-			special_type_slot_5 = air_ground_radar_2
-			special_type_slot_6 = bomb_sights_2
-		}
-	}
-	create_equipment_variant = {
 		name = "P-51 野马"
 		type = small_plane_airframe_3
 		icon = "GFX_USA_advanced_small_airframe_medium"
@@ -1928,19 +1657,6 @@ create_equipment_designs = {
 			special_type_slot_2 = fuel_tanks_small
 			special_type_slot_3 = armor_plate_small
 			special_type_slot_4 = armor_plate_small
-		}
-	}
-	create_equipment_variant = {
-		name = "36战略轰炸机"
-		type = large_plane_airframe_1
-		icon = "GFX_GER_strategic_bomber1_medium"
-		modules = {
-			engine_type_slot = engine_2_4x
-			fixed_main_weapon_slot = large_bomb_bay
-			special_type_slot_1 = self_sealing_fuel_tanks_large
-			special_type_slot_2 = fuel_tanks_large
-			special_type_slot_3 = air_ground_radar_1
-			special_type_slot_4 = bomb_sights_1
 		}
 	}
 }
