@@ -1,0 +1,3539 @@
+# 自动分配工厂生产：缺什么生产什么（陆军装备）。on_daily 对玩家调用。
+# 一次性把全部空闲军工分配完：各类装备按缺口算需求厂数（ceil(缺口/单厂约3个月产量)，正在使用的装备
+# 至少 1 厂，防"装备未生产"提示），小类先分，步枪线最后兜底吸收全部剩余空闲军工。
+# 每类装备只开一条线（flag 防重复）；空闲军工 ≥ 90% 总军工视为玩家清空了队列 → 重置 flag 重新分配。
+# requested_factories 不支持变量，用 1/3/5/9/15/25/40/60/100 阶梯字面量落地（兜底线向上取档）。
+# MIO 两遍选择：先专业制造商（排除坦克翻新/火车等杂类），无则任意可产该装备的 MIO，再无则裸线。
+# 由脚本自动生成，勿手改。
+auto_production = {
+	if = {
+		limit = { check_variable = { num_of_available_military_factories > 0.5 } }
+		# 清空队列检测：空闲 ≥ 90% 总军工 → 重置全部产线标记，本 tick 重新分配
+		set_variable = { prod_total = num_of_military_factories }
+		multiply_variable = { prod_total = 0.9 }
+		if = {
+			limit = { check_variable = { num_of_available_military_factories > prod_total } }
+			clr_country_flag = autocore_prod_support
+			clr_country_flag = autocore_prod_antitank
+			clr_country_flag = autocore_prod_antiair
+			clr_country_flag = autocore_prod_artillery
+			clr_country_flag = autocore_prod_mechanized
+			clr_country_flag = autocore_prod_motorized
+			clr_country_flag = autocore_prod_infantry
+		}
+		set_variable = { prod_left = num_of_available_military_factories }
+		# ===== 支援装备（support_equipment，单厂产能基准 150） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_support }
+				check_variable = { num_target_equipment_in_armies@support_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@support_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@support_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@support_equipment }
+			# 需求厂数 = ceil(缺口/150)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 150 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = support_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			# 第 2 遍兜底：任意可产该装备的 MIO
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = support_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = tech_support }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = support_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_support
+			}
+		}
+		# ===== 反坦克炮（anti_tank_equipment，单厂产能基准 150） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_antitank }
+				check_variable = { num_target_equipment_in_armies@anti_tank_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@anti_tank_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@anti_tank_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@anti_tank_equipment }
+			# 需求厂数 = ceil(缺口/150)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 150 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = anti_tank_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			# 第 2 遍兜底：任意可产该装备的 MIO
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = anti_tank_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = antitank5 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_antitank
+			}
+			else_if = {
+				limit = { has_tech = antitank2 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_antitank
+			}
+			else_if = {
+				limit = { has_tech = interwar_antitank }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_tank_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_antitank
+			}
+		}
+		# ===== 防空炮（anti_air_equipment，单厂产能基准 150） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_antiair }
+				check_variable = { num_target_equipment_in_armies@anti_air_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@anti_air_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@anti_air_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@anti_air_equipment }
+			# 需求厂数 = ceil(缺口/150)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 150 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = anti_air_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			# 第 2 遍兜底：任意可产该装备的 MIO
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = anti_air_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = antiair5 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_antiair
+			}
+			else_if = {
+				limit = { has_tech = antiair2 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_antiair
+			}
+			else_if = {
+				limit = { has_tech = interwar_antiair }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = anti_air_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_antiair
+			}
+		}
+		# ===== 火炮（artillery_equipment，单厂产能基准 180） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_artillery }
+				check_variable = { num_target_equipment_in_armies@artillery_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@artillery_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@artillery_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@artillery_equipment }
+			# 需求厂数 = ceil(缺口/180)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 180 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = artillery_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			# 第 2 遍兜底：任意可产该装备的 MIO
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = artillery_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = artillery4 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_artillery
+			}
+			else_if = {
+				limit = { has_tech = artillery1 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_artillery
+			}
+			else_if = {
+				limit = { has_tech = gw_artillery }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = artillery_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_artillery
+			}
+		}
+		# ===== 机械化（mechanized_equipment，单厂产能基准 80） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_mechanized }
+				check_variable = { num_target_equipment_in_armies@mechanized_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@mechanized_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@mechanized_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@mechanized_equipment }
+			# 需求厂数 = ceil(缺口/80)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 80 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = mechanized_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			# 第 2 遍兜底：任意可产该装备的 MIO
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = mechanized_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = mechanised_infantry3 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_mechanized
+			}
+			else_if = {
+				limit = { has_tech = mechanised_infantry2 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_mechanized
+			}
+			else_if = {
+				limit = { has_tech = mechanised_infantry }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = mechanized_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_mechanized
+			}
+		}
+		# ===== 摩托化（motorized_equipment，单厂产能基准 250） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_motorized }
+				check_variable = { num_target_equipment_in_armies@motorized_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@motorized_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@motorized_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@motorized_equipment }
+			# 需求厂数 = ceil(缺口/250)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 250 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = motorized_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			# 第 2 遍兜底：任意可产该装备的 MIO
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = motorized_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = motorised_infantry }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = motorized_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_motorized
+			}
+		}
+		# ===== 步兵装备（infantry_equipment，单厂产能基准 1500，兜底线：吸收全部剩余空闲军工） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_infantry }
+				check_variable = { num_target_equipment_in_armies@infantry_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@infantry_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@infantry_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@infantry_equipment }
+			# 需求厂数 = ceil(缺口/1500)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 1500 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 兜底：取 max(需求, 剩余空闲)，向上取档 → 空闲军工全部用完
+			set_variable = { prod_alloc = prod_left }
+			if = {
+				limit = { check_variable = { prod_want > prod_alloc } }
+				set_variable = { prod_alloc = prod_want }
+			}
+			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类；步枪线再排除支援装备商）
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = infantry_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+					NOT = { has_mio_equipment_type = support_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			# 第 2 遍兜底：任意可产该装备的 MIO
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = infantry_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = advanced_infantry_weapons }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+			else_if = {
+				limit = { has_tech = improved_infantry_weapons }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+			else_if = {
+				limit = { has_tech = infantry_weapons1 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+			else_if = {
+				limit = { has_tech = infantry_weapons }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 60 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 40 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 25 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 15 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 9 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 5 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 3 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 1 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+		}
+	}
+}

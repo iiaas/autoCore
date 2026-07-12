@@ -8,14 +8,10 @@ ideas = {
 				army_fuel_capacity_factor = -2
 				army_fuel_consumption_factor = -1
 				air_fuel_consumption_factor = -1
-				navy_fuel_consumption_factor = -1
-				spotting_chance = 100
+ 				navy_fuel_consumption_factor = -1
 				resistance_target = -1
 				compliance_gain = 0.05
-				special_forces_cap = 100
-				subjects_autonomy_gain = -500
-				tactic_breakthrough_preferred_weight_factor = 1000
-				tactic_backhand_blow_preferred_weight_factor = 1000
+				subjects_autonomy_gain = -10
 			}
 		}
 	}

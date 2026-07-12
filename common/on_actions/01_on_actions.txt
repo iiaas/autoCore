@@ -35,19 +35,20 @@ on_actions = {
 				set_technology_auto = yes
 				auto_build = yes
 				add_mastery = { amount = 1 }
+				# 自动分配工厂生产：缺什么生产什么（陆军装备，缺口>100 开线，产完自动关线）
+				auto_production = yes
 				if = {
 					limit = { has_idea = autocore_army_no_fuel }
 					modify_timed_idea = { idea = autocore_army_no_fuel days = 1 }
+					auto_deploy_unit = yes
 				}
 				else = {
 					add_timed_idea = { idea = autocore_army_no_fuel days = 2 }
+					# 每个 MIO 一次性解锁全部未完成特性
+					auto_mio_complete_trait = yes
 					create_equipment_designs = yes
 					# 开局/换国第一天：点亮初始可选前沿（只高亮不完成；并防同日 on_monthly 秒完成）
 					auto_focus_shine = yes
-					# 每个 MIO 一次性解锁全部未完成特性
-					auto_mio_complete_trait = yes
-					unlock_tactic = tactic_breakthrough
-					unlock_tactic = tactic_backhand_blow
 				}
 			}
 		}
