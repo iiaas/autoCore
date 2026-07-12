@@ -464,7 +464,7 @@ complete_special_project_1945 = {
 	complete_special_project = { project = sp:sp_rockets_long_range_ballistic_missile }
 }
 
-set_technology_auto = {
+auto_research = {
 	set_technology_before_1936 = yes
 	if = {
 		limit = { date > 1936.1.1 }

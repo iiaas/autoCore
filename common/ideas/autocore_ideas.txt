@@ -10,7 +10,7 @@ ideas = {
 				air_fuel_consumption_factor = -1
  				navy_fuel_consumption_factor = -1
 				resistance_target = -1
-				compliance_gain = 0.05
+				compliance_gain = 0.1
 				subjects_autonomy_gain = -10
 			}
 		}
