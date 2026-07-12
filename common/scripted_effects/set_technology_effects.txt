@@ -413,53 +413,53 @@ complete_special_project_1937 = {
 }
 
 complete_special_project_1938 = {
-	complete_special_project = { project = sp:sp_land_super_heavy_howitzer }
 	complete_special_project = { project = sp:sp_naval_aip_engine }
 	complete_special_project = { project = sp:sp_naval_anechoic_tiles }
 }
 
 complete_special_project_1939 = {
+	complete_special_project = { project = sp:sp_land_super_heavy_howitzer }
 	complete_special_project = { project = sp:sp_land_super_heavy_railway_gun }
 }
 
 complete_special_project_1940 = {
-	complete_special_project = { project = sp:sp_nuclear_reactor }
-	complete_special_project = { project = sp:sp_air_intercontinental_bomber }
-	complete_special_project = { project = sp:sp_air_mothership_aircraft }
 	complete_special_project = { project = sp:sp_naval_fleet_submarine }
 }
 
 complete_special_project_1941 = {
-	complete_special_project = { project = sp:sp_commercial_nuclear_reactor }
-	complete_special_project = { project = sp:sp_nuclear_bomb }
+	complete_special_project = { project = sp:sp_air_helicopter }
 }
 
 complete_special_project_1942 = {
-	complete_special_project = { project = sp:sp_nuclear_engines }
-	complete_special_project = { project = sp:sp_thermo_nuclear_bomb }
-	complete_special_project = { project = sp:sp_rockets_ballistic_missile }
-	complete_special_project = { project = sp:sp_rockets_flying_bomb }
-	complete_special_project = { project = sp:sp_rocket_interceptor }
+	complete_special_project = { project = sp:sp_nuclear_reactor }
+	complete_special_project = { project = sp:sp_air_mothership_aircraft }
 }
 
 complete_special_project_1943 = {
-	complete_special_project = { project = sp:sp_naval_modern_battleship }
-	complete_special_project = { project = sp:sp_naval_modern_carrier }
-	complete_special_project = { project = sp:sp_naval_nuclear_submarine }
-	complete_special_project = { project = sp:sp_naval_rocket_launching_submarine }
-	complete_special_project = { project = sp:sp_rockets_medium_range_ballistic_missile }
-	complete_special_project = { project = sp:sp_rockets_ground_to_air_missile }
+	complete_special_project = { project = sp:sp_commercial_nuclear_reactor }
 }
 
 complete_special_project_1944 = {
+	complete_special_project = { project = sp:sp_air_intercontinental_bomber }
+	complete_special_project = { project = sp:sp_rockets_ground_to_air_missile }
+	complete_special_project = { project = sp:sp_rockets_medium_range_ballistic_missile }
+	complete_special_project = { project = sp:sp_naval_rocket_launching_submarine }
+	complete_special_project = { project = sp:sp_nuclear_bomb }
+	complete_special_project = { project = sp:sp_nuclear_engines }
+	complete_special_project = { project = sp:sp_rockets_ballistic_missile }
+	complete_special_project = { project = sp:sp_rockets_flying_bomb }
 	complete_special_project = { project = sp:sp_air_axial_jet_engine }
-	complete_special_project = { project = sp:sp_air_helicopter }
-	complete_special_project = { project = sp:sp_naval_nuclear_torpedo }
-	complete_special_project = { project = sp:sp_naval_nuclear_missile_submarine }
 	complete_special_project = { project = sp:sp_nuclear_warheads }
 }
 
 complete_special_project_1945 = {
+	complete_special_project = { project = sp:sp_naval_modern_battleship }
+	complete_special_project = { project = sp:sp_naval_modern_carrier }
+	complete_special_project = { project = sp:sp_naval_nuclear_torpedo }
+	complete_special_project = { project = sp:sp_naval_nuclear_missile_submarine }
+	complete_special_project = { project = sp:sp_rocket_interceptor }
+	complete_special_project = { project = sp:sp_thermo_nuclear_bomb }
+	complete_special_project = { project = sp:sp_naval_nuclear_submarine }
 	complete_special_project = { project = sp:sp_air_supersonic_jet }
 	complete_special_project = { project = sp:sp_rockets_long_range_ballistic_missile }
 }

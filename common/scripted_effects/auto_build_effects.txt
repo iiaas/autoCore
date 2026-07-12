@@ -1,0 +1,438 @@
+# 自动建造（工厂最大化方案）：add_building_construction(instant_build=no) 真实排队，由民工施工。
+#
+# 配额：num_of_civilian_factories_available_for_projects（空闲民工）/15 向上取整，不留闲置民工；
+#       为 0 时本月不排队。配额判断放各分支 limit 内逐州求值即时扣减。
+#
+# 阶段（build_phase）：
+#   3 战争期：has_war 或 世界紧张度>75% → 全军工；有海军底子(海军工厂>4)的国家 军:船=3:1
+#   2 备战期：紧张度>25% 或 过备战日（早战国 中日满军阀=1937.1.1，其他=1938.1.1）→ 民:军=1:2
+#   1 扩张期：其余 → 全民工（吃复利）
+#
+# 州优先级（扫描顺序=入队顺序）：
+#   P1 基建5级有空槽 → 按阶段造厂（基建满=造最快，先吃配额）
+#   P2 大坝州基建未满 → 造基建
+#   P3 空槽≥5 且基建未满 → 造基建（剩余工程多，提速回本：基建3000省约750/厂）
+#   P4 基建4级、空槽1-4 → 按阶段造厂（拉基建不回本，直接造）
+#   P5 基建≤3、空槽1-4 → 按阶段造厂
+#   P6 完全满建 → increase_state_category 升地区类型解锁新槽（免费，不占配额）
+#
+# 队列中的建筑占用建造槽，free_building_slots 随之减少，每月重跑不会重复排队。
+# 调用方需为国家 scope，由 on_monthly 调用。
+auto_build = {
+	# ---- 配额 = 空闲民工/15 向上取整 ----
+	set_variable = { build_quota = num_of_civilian_factories_available_for_projects }
+	divide_variable = { build_quota = 15 }
+	add_to_variable = { build_quota = 0.49 }
+	round_variable = build_quota
+
+	# ---- 阶段判定 ----
+	set_variable = { build_phase = 1 }
+	if = {
+		limit = {
+			OR = {
+				threat > 0.25
+				date > 1938.1.1
+				AND = {
+					date > 1937.1.1
+					OR = {
+						original_tag = JAP
+						original_tag = CHI
+						original_tag = PRC
+						original_tag = MAN
+						original_tag = GXC
+						original_tag = YUN
+						original_tag = SIK
+						original_tag = SHX
+						original_tag = XSM
+					}
+				}
+			}
+		}
+		set_variable = { build_phase = 2 }
+	}
+	if = {
+		limit = {
+			OR = {
+				has_war = yes
+				threat > 0.75
+			}
+		}
+		set_variable = { build_phase = 3 }
+	}
+
+	# ---- 轮换指针 ----
+	# 备战期 民:军=1:2：prep_cycle 取 1(民),2(军),3(军)
+	add_to_variable = { prep_cycle = 1 }
+	if = {
+		limit = { check_variable = { prep_cycle > 3 } }
+		set_variable = { prep_cycle = 1 }
+	}
+	# 战争期 军:船=3:1（仅海军国）：war_cycle 取 1-3(军),4(船)
+	add_to_variable = { war_cycle = 1 }
+	if = {
+		limit = { check_variable = { war_cycle > 4 } }
+		set_variable = { war_cycle = 1 }
+	}
+
+	# ===== P1：基建5级的州 → 按阶段造厂 =====
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+			infrastructure > 4
+		}
+		if = {
+			# 扩张期：全民工
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			# 备战期·轮到民用
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 2 } }
+				ROOT = { check_variable = { prep_cycle = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			# 备战期·轮到军工
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 2 } }
+				ROOT = { check_variable = { prep_cycle > 1 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			# 战争期·海军国轮到船坞（沿海州）
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 3 } }
+				ROOT = { num_of_naval_factories > 4 }
+				ROOT = { check_variable = { war_cycle = 4 } }
+				is_coastal = yes
+				free_building_slots = { building = dockyard size > 0 }
+			}
+			add_building_construction = { type = dockyard level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			# 战争期·军工
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 3 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+	}
+
+	# ===== P2：大坝州基建未满 → 造基建 =====
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+			infrastructure < 5
+			OR = {
+				dam > 0
+				dam_mountain > 0
+			}
+		}
+		if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				free_building_slots = { building = infrastructure size > 0 }
+			}
+			add_building_construction = { type = infrastructure level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+	}
+
+	# ===== P3：空槽≥5 且基建未满 → 造基建（提速回本） =====
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+			infrastructure < 5
+			dam < 1
+			dam_mountain < 1
+			free_building_slots = { building = industrial_complex size > 4 }
+		}
+		if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				free_building_slots = { building = infrastructure size > 0 }
+			}
+			add_building_construction = { type = infrastructure level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+	}
+
+	# ===== P4：基建4级、空槽1-4 → 按阶段造厂 =====
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+			infrastructure > 3
+			infrastructure < 5
+			free_building_slots = { building = industrial_complex size > 0 }
+			free_building_slots = { building = industrial_complex size < 5 }
+		}
+		if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 2 } }
+				ROOT = { check_variable = { prep_cycle = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 2 } }
+				ROOT = { check_variable = { prep_cycle > 1 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 3 } }
+				ROOT = { num_of_naval_factories > 4 }
+				ROOT = { check_variable = { war_cycle = 4 } }
+				is_coastal = yes
+				free_building_slots = { building = dockyard size > 0 }
+			}
+			add_building_construction = { type = dockyard level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 3 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+	}
+
+	# ===== P5：基建≤3、空槽1-4 → 按阶段造厂 =====
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+			infrastructure < 4
+			free_building_slots = { building = industrial_complex size > 0 }
+			free_building_slots = { building = industrial_complex size < 5 }
+		}
+		if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 2 } }
+				ROOT = { check_variable = { prep_cycle = 1 } }
+				free_building_slots = { building = industrial_complex size > 0 }
+			}
+			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 2 } }
+				ROOT = { check_variable = { prep_cycle > 1 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 3 } }
+				ROOT = { num_of_naval_factories > 4 }
+				ROOT = { check_variable = { war_cycle = 4 } }
+				is_coastal = yes
+				free_building_slots = { building = dockyard size > 0 }
+			}
+			add_building_construction = { type = dockyard level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+		else_if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				ROOT = { check_variable = { build_phase = 3 } }
+				free_building_slots = { building = arms_factory size > 0 }
+			}
+			add_building_construction = { type = arms_factory level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+	}
+
+	# ===== P6：完全满建 → 升地区类型解锁新槽（免费，不占配额） =====
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+			free_building_slots = { building = infrastructure size < 1 }
+			free_building_slots = { building = industrial_complex size < 1 }
+			NOT = { has_state_category = megalopolis }
+			NOT = { has_state_category = large_island }
+			NOT = { has_state_category = wasteland }
+		}
+		increase_state_category = yes
+	}
+
+	# ===== 补资源（原 auto_farm_build 并入） =====
+	# 预算 = 可用民工数 × 系数，保底 1；国家有资源缺口时，每 1 预算给当前州补 8 点缺口资源，
+	# 随 every_owned_state 循环散布到各省。add_resource 不接受变量 amount，故按 1 点逐量补。
+	# 本月补资源预算 = 可用民工数 × 系数（调此值控制速度）
+	set_variable = { farm_budget = num_of_available_civilian_factories }
+	multiply_variable = { farm_budget = 0.1 }
+	round_variable = farm_budget
+	# 保底每月至少 1 预算（民工很少时也能慢慢补）
+	if = { limit = { check_variable = { farm_budget < 1 } } set_variable = { farm_budget = 1 } }
+	# 计算各资源缺口：国家剩余量 resource@<类型> 为负即缺口，def_<类型> = max(0, -剩余量)
+	set_variable = { def_oil = resource@oil }
+	multiply_variable = { def_oil = -1 }
+	if = { limit = { check_variable = { def_oil < 0 } } set_variable = { def_oil = 0 } }
+	round_variable = def_oil
+	set_variable = { def_aluminium = resource@aluminium }
+	multiply_variable = { def_aluminium = -1 }
+	if = { limit = { check_variable = { def_aluminium < 0 } } set_variable = { def_aluminium = 0 } }
+	round_variable = def_aluminium
+	set_variable = { def_rubber = resource@rubber }
+	multiply_variable = { def_rubber = -1 }
+	if = { limit = { check_variable = { def_rubber < 0 } } set_variable = { def_rubber = 0 } }
+	round_variable = def_rubber
+	set_variable = { def_tungsten = resource@tungsten }
+	multiply_variable = { def_tungsten = -1 }
+	if = { limit = { check_variable = { def_tungsten < 0 } } set_variable = { def_tungsten = 0 } }
+	round_variable = def_tungsten
+	set_variable = { def_steel = resource@steel }
+	multiply_variable = { def_steel = -1 }
+	if = { limit = { check_variable = { def_steel < 0 } } set_variable = { def_steel = 0 } }
+	round_variable = def_steel
+	set_variable = { def_chromium = resource@chromium }
+	multiply_variable = { def_chromium = -1 }
+	if = { limit = { check_variable = { def_chromium < 0 } } set_variable = { def_chromium = 0 } }
+	round_variable = def_chromium
+	set_variable = { def_coal = resource@coal }
+	multiply_variable = { def_coal = -1 }
+	if = { limit = { check_variable = { def_coal < 0 } } set_variable = { def_coal = 0 } }
+	round_variable = def_coal
+	# 补资源循环：预算判断放 if 的 limit 内（逐州求值即时生效）；
+	# every_owned_state 的 limit 是遍历前一次性算好的，不能用来控预算。
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+		}
+		if = {
+			# 国家仍有缺口且有预算 → 花 1 预算给本州补 8 点缺口资源(随循环散布到各省)
+			limit = {
+				ROOT = { check_variable = { farm_budget > 0 } }
+				OR = {
+					ROOT = { check_variable = { def_oil > 0 } }
+					ROOT = { check_variable = { def_aluminium > 0 } }
+					ROOT = { check_variable = { def_rubber > 0 } }
+					ROOT = { check_variable = { def_tungsten > 0 } }
+					ROOT = { check_variable = { def_steel > 0 } }
+					ROOT = { check_variable = { def_chromium > 0 } }
+					ROOT = { check_variable = { def_coal > 0 } }
+				}
+			}
+			ROOT = { subtract_from_variable = { farm_budget = 1 } }
+			ROOT = { set_variable = { res_quota = 8 } }
+			while_loop_effect = {
+				limit = {
+					ROOT = { check_variable = { res_quota > 0 } }
+					OR = {
+						ROOT = { check_variable = { def_oil > 0 } }
+						ROOT = { check_variable = { def_aluminium > 0 } }
+						ROOT = { check_variable = { def_rubber > 0 } }
+						ROOT = { check_variable = { def_tungsten > 0 } }
+						ROOT = { check_variable = { def_steel > 0 } }
+						ROOT = { check_variable = { def_chromium > 0 } }
+						ROOT = { check_variable = { def_coal > 0 } }
+					}
+				}
+				if = {
+					limit = { ROOT = { check_variable = { def_oil > 0 } } }
+					add_resource = { type = oil amount = 1 }
+					ROOT = { subtract_from_variable = { def_oil = 1 } }
+					ROOT = { subtract_from_variable = { res_quota = 1 } }
+				}
+				else_if = {
+					limit = { ROOT = { check_variable = { def_aluminium > 0 } } }
+					add_resource = { type = aluminium amount = 1 }
+					ROOT = { subtract_from_variable = { def_aluminium = 1 } }
+					ROOT = { subtract_from_variable = { res_quota = 1 } }
+				}
+				else_if = {
+					limit = { ROOT = { check_variable = { def_rubber > 0 } } }
+					add_resource = { type = rubber amount = 1 }
+					ROOT = { subtract_from_variable = { def_rubber = 1 } }
+					ROOT = { subtract_from_variable = { res_quota = 1 } }
+				}
+				else_if = {
+					limit = { ROOT = { check_variable = { def_tungsten > 0 } } }
+					add_resource = { type = tungsten amount = 1 }
+					ROOT = { subtract_from_variable = { def_tungsten = 1 } }
+					ROOT = { subtract_from_variable = { res_quota = 1 } }
+				}
+				else_if = {
+					limit = { ROOT = { check_variable = { def_steel > 0 } } }
+					add_resource = { type = steel amount = 1 }
+					ROOT = { subtract_from_variable = { def_steel = 1 } }
+					ROOT = { subtract_from_variable = { res_quota = 1 } }
+				}
+				else_if = {
+					limit = { ROOT = { check_variable = { def_chromium > 0 } } }
+					add_resource = { type = chromium amount = 1 }
+					ROOT = { subtract_from_variable = { def_chromium = 1 } }
+					ROOT = { subtract_from_variable = { res_quota = 1 } }
+				}
+				else_if = {
+					limit = { ROOT = { check_variable = { def_coal > 0 } } }
+					add_resource = { type = coal amount = 1 }
+					ROOT = { subtract_from_variable = { def_coal = 1 } }
+					ROOT = { subtract_from_variable = { res_quota = 1 } }
+				}
+			}
+		}
+	}
+}

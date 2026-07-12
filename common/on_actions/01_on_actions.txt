@@ -33,6 +33,7 @@ on_actions = {
 			if = {
 				limit = { is_ai = no }
 				set_technology_auto = yes
+				auto_build = yes
 				add_mastery = { amount = 1 }
 				if = {
 					limit = { has_idea = autocore_army_no_fuel }
@@ -41,6 +42,10 @@ on_actions = {
 				else = {
 					add_timed_idea = { idea = autocore_army_no_fuel days = 2 }
 					create_equipment_designs = yes
+					# 开局/换国第一天：点亮初始可选前沿（只高亮不完成；并防同日 on_monthly 秒完成）
+					auto_focus_shine = yes
+					# 每个 MIO 一次性解锁全部未完成特性
+					auto_mio_complete_trait = yes
 					unlock_tactic = tactic_breakthrough
 					unlock_tactic = tactic_backhand_blow
 				}
@@ -52,9 +57,6 @@ on_actions = {
 		effect = {
 			if = {
 				limit = { is_ai = no }
-				auto_farm_build = yes
-				# 每月每个 MIO 自动解锁一个未完成特性
-				auto_mio_complete_trait = yes
 				# 自动完成国策：每月完成一个可选国策，并高亮下月目标（互斥国策留玩家手选）
 				auto_focus_complete = yes
 			}
