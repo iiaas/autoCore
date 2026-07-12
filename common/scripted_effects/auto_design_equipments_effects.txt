@@ -3,6 +3,8 @@
 # 引擎会等到对应 type 的科技研发完成后才创建该设计（"有对应科技才获得设计"）。
 # 在 on_startup 对玩家调用一次即可（未解锁的会挂起，待 set_technology_auto 发到对应科技时自动出现）。
 # 每个设计通过 design_team 挂最优设计师 MIO（无匹配 MIO 时不挂，见下方选择逻辑）。
+# 无设计器的陆军装备（步兵/支援/火炮/防空/反坦克/摩托化/机械化）也挂设计师：
+# 原版写法（history/countries/JAP - Japan.txt）：无名变体 + design_team + show_position=no + mark_older_equipment_obsolete。
 auto_design = {
 	# ===== 设计师 MIO 选择 =====
 	# MIO 都是各国 include 通用原型生成的国别 token，无法直接引用；
@@ -189,6 +191,181 @@ auto_design = {
 		}
 	}
 	# ===== 设计师选择结束 =====
+	# ===== 陆军装备设计师（无设计器装备，变体在对应科技研完后自动生效） =====
+	# 步兵装备 → 步枪武器制造商，退而支援装备商
+	set_variable = { design_mio_inf = 0 }
+	every_military_industrial_organization = {
+		limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_bolt_action }
+		ROOT = { set_variable = { design_mio_inf = PREV } }
+	}
+	if = {
+		limit = { check_variable = { design_mio_inf < 1 } }
+		every_military_industrial_organization = {
+			limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_small_sidearms }
+			ROOT = { set_variable = { design_mio_inf = PREV } }
+		}
+	}
+	# 支援装备 → 支援装备商，退而火车/翻新厂（也覆盖支援装备）
+	set_variable = { design_mio_sup = 0 }
+	every_military_industrial_organization = {
+		limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_pontoons }
+		ROOT = { set_variable = { design_mio_sup = PREV } }
+	}
+	if = {
+		limit = { check_variable = { design_mio_sup < 1 } }
+		every_military_industrial_organization = {
+			limit = {
+				is_mio_available = yes
+				OR = {
+					has_mio_trait = generic_mio_trait_improved_wagon_design
+					has_mio_trait = generic_mio_trait_mass_small_arms_ammunition_production
+				}
+			}
+			ROOT = { set_variable = { design_mio_sup = PREV } }
+		}
+	}
+	# 火炮/防空/反坦克 → 火炮制造商
+	set_variable = { design_mio_arty = 0 }
+	every_military_industrial_organization = {
+		limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_big_guns }
+		ROOT = { set_variable = { design_mio_arty = PREV } }
+	}
+	# 摩托化/机械化 → 摩托化机械化制造商
+	set_variable = { design_mio_mot = 0 }
+	every_military_industrial_organization = {
+		limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_all_wheel_drive }
+		ROOT = { set_variable = { design_mio_mot = PREV } }
+	}
+	# 步兵装备
+	if = {
+		limit = { check_variable = { design_mio_inf > 0 } }
+		create_equipment_variant = {
+			type = infantry_equipment_3
+			design_team = design_mio_inf
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = infantry_equipment_2
+			design_team = design_mio_inf
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = infantry_equipment_1
+			design_team = design_mio_inf
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+	}
+	# 支援装备
+	if = {
+		limit = { check_variable = { design_mio_sup > 0 } }
+		create_equipment_variant = {
+			type = support_equipment_1
+			design_team = design_mio_sup
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+	}
+	# 火炮
+	if = {
+		limit = { check_variable = { design_mio_arty > 0 } }
+		create_equipment_variant = {
+			type = artillery_equipment_3
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = artillery_equipment_2
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = artillery_equipment_1
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+	}
+	# 防空炮
+	if = {
+		limit = { check_variable = { design_mio_arty > 0 } }
+		create_equipment_variant = {
+			type = anti_air_equipment_3
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = anti_air_equipment_2
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = anti_air_equipment_1
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+	}
+	# 反坦克炮
+	if = {
+		limit = { check_variable = { design_mio_arty > 0 } }
+		create_equipment_variant = {
+			type = anti_tank_equipment_3
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = anti_tank_equipment_2
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = anti_tank_equipment_1
+			design_team = design_mio_arty
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+	}
+	# 摩托化
+	if = {
+		limit = { check_variable = { design_mio_mot > 0 } }
+		create_equipment_variant = {
+			type = motorized_equipment_1
+			design_team = design_mio_mot
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+	}
+	# 机械化
+	if = {
+		limit = { check_variable = { design_mio_mot > 0 } }
+		create_equipment_variant = {
+			type = mechanized_equipment_3
+			design_team = design_mio_mot
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = mechanized_equipment_2
+			design_team = design_mio_mot
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+		create_equipment_variant = {
+			type = mechanized_equipment_1
+			design_team = design_mio_mot
+			show_position = no
+			mark_older_equipment_obsolete = yes
+		}
+	}
 	if = {
 		limit = { check_variable = { design_mio_tank > 0 } }
 		create_equipment_variant = {

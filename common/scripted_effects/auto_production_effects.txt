@@ -1,11 +1,18 @@
-# 自动分配工厂生产：缺什么生产什么（陆军装备）。on_daily 对玩家调用。
-# 一次性把全部空闲军工分配完：各类装备按缺口算需求厂数（ceil(缺口/单厂约3个月产量)，正在使用的装备
-# 至少 1 厂，防"装备未生产"提示），小类先分，步枪线最后兜底吸收全部剩余空闲军工。
-# 每类装备只开一条线（flag 防重复）；空闲军工 ≥ 90% 总军工视为玩家清空了队列 → 重置 flag 重新分配。
-# requested_factories 不支持变量，用 1/3/5/9/15/25/40/60/100 阶梯字面量落地（兜底线向上取档）。
-# MIO 两遍选择：先专业制造商（排除坦克翻新/火车等杂类），无则任意可产该装备的 MIO，再无则裸线。
+# 自动分配工厂生产：缺什么生产什么。on_daily 对玩家调用。
+# 军工：一次性把全部空闲军工分配完。陆装按缺口（目标-在军中-库存）、坦克/飞机设计同理
+# （飞机无部队需求，按库存阈值补货），需求厂数 = ceil(缺口/单厂产能)。
+# 步枪线最先创建（产线创建顺序=生产队列优先级，步枪永远排最顶、最先分到工厂）。
+# 每类分配 = min(需求, 剩余空闲)，只开一条线（flag 防重复）；
+# 空闲军工 ≥ 90% 总军工视为玩家清空了队列 → 重置 flag 重新分配。
+# requested_factories 不支持变量，用 1/3/5/9/15/25/40/60/100 阶梯字面量落地；
+# 授予值永不超过剩余空闲（每条线开线前检查剩余>0），总请求 ≤ 可用军工，
+# 取整零头与分剩的工厂留给之后的分配轮次（有未开的类别时自动补开）。
+# 海军：有空闲船坞时给战列舰/航母各开一条 5 坞线、鱼雷驱逐/轻炮巡洋各开一条 10 坞线（设计
+# 取自 auto_design_equipments）；可重复开线——船坞被吸满后不再开，新增船坞先流入未满的线。
+# MIO：产线制造商两遍择优（专业优先，原型独有 trait / 装备类型识别），无匹配则裸线。
 # 由脚本自动生成，勿手改。
 auto_production = {
+	# ===== 军工分配 =====
 	if = {
 		limit = { check_variable = { num_of_available_military_factories > 0.5 } }
 		# 清空队列检测：空闲 ≥ 90% 总军工 → 重置全部产线标记，本 tick 重新分配
@@ -13,19 +20,784 @@ auto_production = {
 		multiply_variable = { prod_total = 0.9 }
 		if = {
 			limit = { check_variable = { num_of_available_military_factories > prod_total } }
+			clr_country_flag = autocore_prod_infantry
 			clr_country_flag = autocore_prod_support
 			clr_country_flag = autocore_prod_antitank
 			clr_country_flag = autocore_prod_antiair
 			clr_country_flag = autocore_prod_artillery
 			clr_country_flag = autocore_prod_mechanized
 			clr_country_flag = autocore_prod_motorized
-			clr_country_flag = autocore_prod_infantry
+			clr_country_flag = autocore_prod_flame
+			clr_country_flag = autocore_prod_td
+			clr_country_flag = autocore_prod_spg
+			clr_country_flag = autocore_prod_cas
+			clr_country_flag = autocore_prod_cvftr
+			clr_country_flag = autocore_prod_cvnb
+			clr_country_flag = autocore_prod_cvcas
+			clr_country_flag = autocore_prod_fighter
 		}
 		set_variable = { prod_left = num_of_available_military_factories }
+		# ===== 步兵装备（infantry_equipment，单厂产能基准 1500） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_infantry }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_target_equipment_in_armies@infantry_equipment > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@infantry_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@infantry_equipment }
+			subtract_from_variable = { prod_deficit = num_equipment@infantry_equipment }
+			# 需求厂数 = ceil(缺口/1500)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 1500 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					has_mio_equipment_type = infantry_equipment
+					NOT = { has_mio_equipment_type = armor }
+					NOT = { has_mio_equipment_type = train_equipment }
+					NOT = { has_mio_equipment_type = support_equipment }
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = { is_mio_available = yes has_mio_equipment_type = infantry_equipment }
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = advanced_infantry_weapons }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_3 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+			else_if = {
+				limit = { has_tech = improved_infantry_weapons }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_2 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+			else_if = {
+				limit = { has_tech = infantry_weapons1 }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_1 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+			else_if = {
+				limit = { has_tech = infantry_weapons }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = infantry_equipment_0 }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_infantry
+			}
+		}
 		# ===== 支援装备（support_equipment，单厂产能基准 150） =====
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_support }
+				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@support_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@support_equipment }
@@ -46,7 +818,6 @@ auto_production = {
 				limit = { check_variable = { prod_alloc > prod_left } }
 				set_variable = { prod_alloc = prod_left }
 			}
-			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
 			set_variable = { line_mio = 0 }
 			every_military_industrial_organization = {
 				limit = {
@@ -57,7 +828,6 @@ auto_production = {
 				}
 				ROOT = { set_variable = { line_mio = PREV } }
 			}
-			# 第 2 遍兜底：任意可产该装备的 MIO
 			if = {
 				limit = { check_variable = { line_mio < 1 } }
 				every_military_industrial_organization = {
@@ -248,6 +1018,7 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_antitank }
+				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@anti_tank_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@anti_tank_equipment }
@@ -268,7 +1039,6 @@ auto_production = {
 				limit = { check_variable = { prod_alloc > prod_left } }
 				set_variable = { prod_alloc = prod_left }
 			}
-			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
 			set_variable = { line_mio = 0 }
 			every_military_industrial_organization = {
 				limit = {
@@ -279,7 +1049,6 @@ auto_production = {
 				}
 				ROOT = { set_variable = { line_mio = PREV } }
 			}
-			# 第 2 遍兜底：任意可产该装备的 MIO
 			if = {
 				limit = { check_variable = { line_mio < 1 } }
 				every_military_industrial_organization = {
@@ -826,6 +1595,7 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_antiair }
+				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@anti_air_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@anti_air_equipment }
@@ -846,7 +1616,6 @@ auto_production = {
 				limit = { check_variable = { prod_alloc > prod_left } }
 				set_variable = { prod_alloc = prod_left }
 			}
-			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
 			set_variable = { line_mio = 0 }
 			every_military_industrial_organization = {
 				limit = {
@@ -857,7 +1626,6 @@ auto_production = {
 				}
 				ROOT = { set_variable = { line_mio = PREV } }
 			}
-			# 第 2 遍兜底：任意可产该装备的 MIO
 			if = {
 				limit = { check_variable = { line_mio < 1 } }
 				every_military_industrial_organization = {
@@ -1404,6 +2172,7 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_artillery }
+				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@artillery_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@artillery_equipment }
@@ -1424,7 +2193,6 @@ auto_production = {
 				limit = { check_variable = { prod_alloc > prod_left } }
 				set_variable = { prod_alloc = prod_left }
 			}
-			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
 			set_variable = { line_mio = 0 }
 			every_military_industrial_organization = {
 				limit = {
@@ -1435,7 +2203,6 @@ auto_production = {
 				}
 				ROOT = { set_variable = { line_mio = PREV } }
 			}
-			# 第 2 遍兜底：任意可产该装备的 MIO
 			if = {
 				limit = { check_variable = { line_mio < 1 } }
 				every_military_industrial_organization = {
@@ -1982,6 +2749,7 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_mechanized }
+				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@mechanized_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@mechanized_equipment }
@@ -2002,7 +2770,6 @@ auto_production = {
 				limit = { check_variable = { prod_alloc > prod_left } }
 				set_variable = { prod_alloc = prod_left }
 			}
-			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
 			set_variable = { line_mio = 0 }
 			every_military_industrial_organization = {
 				limit = {
@@ -2013,7 +2780,6 @@ auto_production = {
 				}
 				ROOT = { set_variable = { line_mio = PREV } }
 			}
-			# 第 2 遍兜底：任意可产该装备的 MIO
 			if = {
 				limit = { check_variable = { line_mio < 1 } }
 				every_military_industrial_organization = {
@@ -2560,6 +3326,7 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_motorized }
+				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@motorized_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@motorized_equipment }
@@ -2580,7 +3347,6 @@ auto_production = {
 				limit = { check_variable = { prod_alloc > prod_left } }
 				set_variable = { prod_alloc = prod_left }
 			}
-			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类）
 			set_variable = { line_mio = 0 }
 			every_military_industrial_organization = {
 				limit = {
@@ -2591,7 +3357,6 @@ auto_production = {
 				}
 				ROOT = { set_variable = { line_mio = PREV } }
 			}
-			# 第 2 遍兜底：任意可产该装备的 MIO
 			if = {
 				limit = { check_variable = { line_mio < 1 } }
 				every_military_industrial_organization = {
@@ -2778,58 +3543,58 @@ auto_production = {
 				set_country_flag = autocore_prod_motorized
 			}
 		}
-		# ===== 步兵装备（infantry_equipment，单厂产能基准 1500，兜底线：吸收全部剩余空闲军工） =====
+		# ===== 喷火坦克（medium_tank_flame_chassis，单厂产能基准 180） =====
 		if = {
 			limit = {
-				NOT = { has_country_flag = autocore_prod_infantry }
-				check_variable = { num_target_equipment_in_armies@infantry_equipment > 0 }
+				NOT = { has_country_flag = autocore_prod_flame }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_target_equipment_in_armies@medium_tank_flame_chassis > 0 }
 			}
-			set_variable = { prod_deficit = num_target_equipment_in_armies@infantry_equipment }
-			subtract_from_variable = { prod_deficit = num_equipment_in_armies@infantry_equipment }
-			subtract_from_variable = { prod_deficit = num_equipment@infantry_equipment }
-			# 需求厂数 = ceil(缺口/1500)，下限 1
+			set_variable = { prod_deficit = num_target_equipment_in_armies@medium_tank_flame_chassis }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@medium_tank_flame_chassis }
+			subtract_from_variable = { prod_deficit = num_equipment@medium_tank_flame_chassis }
+			# 需求厂数 = ceil(缺口/180)，下限 1
 			set_variable = { prod_want = prod_deficit }
-			divide_variable = { prod_want = 1500 }
+			divide_variable = { prod_want = 180 }
 			add_to_variable = { prod_want = 0.49 }
 			round_variable = prod_want
 			if = {
 				limit = { check_variable = { prod_want < 1 } }
 				set_variable = { prod_want = 1 }
 			}
-			# 兜底：取 max(需求, 剩余空闲)，向上取档 → 空闲军工全部用完
-			set_variable = { prod_alloc = prod_left }
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
 			if = {
-				limit = { check_variable = { prod_want > prod_alloc } }
-				set_variable = { prod_alloc = prod_want }
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
 			}
-			# 第 1 遍：专业制造商（排除兼产坦克/火车的杂类；步枪线再排除支援装备商）
 			set_variable = { line_mio = 0 }
 			every_military_industrial_organization = {
-				limit = {
-					is_mio_available = yes
-					has_mio_equipment_type = infantry_equipment
-					NOT = { has_mio_equipment_type = armor }
-					NOT = { has_mio_equipment_type = train_equipment }
-					NOT = { has_mio_equipment_type = support_equipment }
-				}
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_thick_armor }
 				ROOT = { set_variable = { line_mio = PREV } }
 			}
-			# 第 2 遍兜底：任意可产该装备的 MIO
 			if = {
 				limit = { check_variable = { line_mio < 1 } }
 				every_military_industrial_organization = {
-					limit = { is_mio_available = yes has_mio_equipment_type = infantry_equipment }
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_sloping_armor
+							has_mio_trait = generic_mio_trait_power_traverse
+							has_mio_trait = generic_mio_trait_infantry_support_tanks
+						}
+					}
 					ROOT = { set_variable = { line_mio = PREV } }
 				}
 			}
 			if = {
-				limit = { has_tech = advanced_infantry_weapons }
+				limit = { always = yes }
 				if = {
 					limit = { check_variable = { line_mio > 0 } }
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 100
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2837,9 +3602,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 60
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2847,9 +3612,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 40
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2857,9 +3622,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 25
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2867,9 +3632,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 15
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2877,9 +3642,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 9
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2887,9 +3652,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 5
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2897,9 +3662,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 3
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2908,7 +3673,7 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 1
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -2918,72 +3683,72 @@ auto_production = {
 				}
 				else = {
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 100
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 60
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 40
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 25
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 15
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 9
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 5
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 3
 							efficiency = 100
 						}
@@ -2991,23 +3756,246 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_3 }
+							equipment = { type = medium_tank_flame_chassis_1 version_name = "中型喷火坦克I型" }
 							requested_factories = 1
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 1 }
 					}
 				}
-				set_country_flag = autocore_prod_infantry
+				set_country_flag = autocore_prod_flame
+			}
+		}
+		# ===== 坦克歼击车（medium_tank_destroyer_chassis，单厂产能基准 30） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_td }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_target_equipment_in_armies@medium_tank_destroyer_chassis > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@medium_tank_destroyer_chassis }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@medium_tank_destroyer_chassis }
+			subtract_from_variable = { prod_deficit = num_equipment@medium_tank_destroyer_chassis }
+			# 需求厂数 = ceil(缺口/30)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 30 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_thick_armor }
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_sloping_armor
+							has_mio_trait = generic_mio_trait_power_traverse
+							has_mio_trait = generic_mio_trait_infantry_support_tanks
+						}
+					}
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = advanced_medium_tank_chassis }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = medium_tank_destroyer_chassis_3 version_name = "43坦歼" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_td
 			}
 			else_if = {
-				limit = { has_tech = improved_infantry_weapons }
+				limit = { has_tech = improved_medium_tank_chassis }
 				if = {
 					limit = { check_variable = { line_mio > 0 } }
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 100
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3015,9 +4003,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 60
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3025,9 +4013,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 40
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3035,9 +4023,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 25
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3045,9 +4033,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 15
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3055,9 +4043,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 9
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3065,9 +4053,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 5
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3075,9 +4063,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 3
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3086,7 +4074,7 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 1
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3096,72 +4084,72 @@ auto_production = {
 				}
 				else = {
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 100
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 60
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 40
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 25
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 15
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 9
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 5
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 3
 							efficiency = 100
 						}
@@ -3169,23 +4157,23 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_2 }
+							equipment = { type = medium_tank_destroyer_chassis_2 version_name = "IV号坦克歼击车" }
 							requested_factories = 1
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 1 }
 					}
 				}
-				set_country_flag = autocore_prod_infantry
+				set_country_flag = autocore_prod_td
 			}
 			else_if = {
-				limit = { has_tech = infantry_weapons1 }
+				limit = { has_tech = basic_medium_tank_chassis }
 				if = {
 					limit = { check_variable = { line_mio > 0 } }
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 100
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3193,9 +4181,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 60
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3203,9 +4191,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 40
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3213,9 +4201,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 25
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3223,9 +4211,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 15
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3233,9 +4221,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 9
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3243,9 +4231,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 5
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3253,9 +4241,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 3
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3264,7 +4252,7 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 1
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3274,72 +4262,72 @@ auto_production = {
 				}
 				else = {
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 100
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 60
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 40
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 25
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 15
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 9
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 5
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 3
 							efficiency = 100
 						}
@@ -3347,23 +4335,467 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_1 }
+							equipment = { type = medium_tank_destroyer_chassis_1 version_name = "42坦歼" }
 							requested_factories = 1
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 1 }
 					}
 				}
-				set_country_flag = autocore_prod_infantry
+				set_country_flag = autocore_prod_td
+			}
+		}
+		# ===== 自行火炮（medium_tank_artillery_chassis，单厂产能基准 30） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_spg }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_target_equipment_in_armies@medium_tank_artillery_chassis > 0 }
+			}
+			set_variable = { prod_deficit = num_target_equipment_in_armies@medium_tank_artillery_chassis }
+			subtract_from_variable = { prod_deficit = num_equipment_in_armies@medium_tank_artillery_chassis }
+			subtract_from_variable = { prod_deficit = num_equipment@medium_tank_artillery_chassis }
+			# 需求厂数 = ceil(缺口/30)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 30 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_thick_armor }
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_sloping_armor
+							has_mio_trait = generic_mio_trait_power_traverse
+							has_mio_trait = generic_mio_trait_infantry_support_tanks
+						}
+					}
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = basic_medium_tank_chassis }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = medium_tank_artillery_chassis_1 version_name = "41自火三成员炮塔" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_spg
+			}
+		}
+		# ===== 对地攻击机（small_plane_cas_airframe，单厂产能基准 15，库存阈值 300） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_cas }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_equipment@small_plane_cas_airframe < 300 }
+			}
+			set_variable = { prod_deficit = 300 }
+			subtract_from_variable = { prod_deficit = num_equipment@small_plane_cas_airframe }
+			# 需求厂数 = ceil(缺口/15)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 15 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_air_brakes }
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_trait_close_air_support_expertise
+							has_mio_trait = generic_mio_trait_bomb_trucks
+						}
+					}
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = modern_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_4 version_name = "现代多功能战斗机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_cas
 			}
 			else_if = {
-				limit = { has_tech = infantry_weapons }
+				limit = { has_tech = improved_small_airframe }
 				if = {
 					limit = { check_variable = { line_mio > 0 } }
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 100
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3371,9 +4803,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 60
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3381,9 +4813,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 40
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3391,9 +4823,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 25
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3401,9 +4833,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 15
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3411,9 +4843,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 9
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3421,9 +4853,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 5
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3431,9 +4863,9 @@ auto_production = {
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 3
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3442,7 +4874,7 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 1
 							efficiency = 100
 							industrial_manufacturer = line_mio
@@ -3452,72 +4884,72 @@ auto_production = {
 				}
 				else = {
 					if = {
-						limit = { check_variable = { prod_alloc > 60 } }
+						limit = { check_variable = { prod_alloc > 99 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 100
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 100 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 40 } }
+						limit = { check_variable = { prod_alloc > 59 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 60
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 60 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 25 } }
+						limit = { check_variable = { prod_alloc > 39 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 40
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 40 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 15 } }
+						limit = { check_variable = { prod_alloc > 24 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 25
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 25 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 9 } }
+						limit = { check_variable = { prod_alloc > 14 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 15
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 15 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 5 } }
+						limit = { check_variable = { prod_alloc > 8 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 9
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 9 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 3 } }
+						limit = { check_variable = { prod_alloc > 4 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 5
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 5 }
 					}
 					else_if = {
-						limit = { check_variable = { prod_alloc > 1 } }
+						limit = { check_variable = { prod_alloc > 2 } }
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 3
 							efficiency = 100
 						}
@@ -3525,14 +4957,2222 @@ auto_production = {
 					}
 					else = {
 						add_equipment_production = {
-							equipment = { type = infantry_equipment_0 }
+							equipment = { type = small_plane_cas_airframe_2 version_name = "40多功能" }
 							requested_factories = 1
 							efficiency = 100
 						}
 						subtract_from_variable = { prod_left = 1 }
 					}
 				}
-				set_country_flag = autocore_prod_infantry
+				set_country_flag = autocore_prod_cas
+			}
+			else_if = {
+				limit = { has_tech = basic_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_cas_airframe_1 version_name = "36俯冲机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_cas
+			}
+		}
+		# ===== 舰载战斗机（cv_small_plane_airframe，单厂产能基准 15，库存阈值 100） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_cvftr }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_equipment@cv_small_plane_airframe < 100 }
+			}
+			set_variable = { prod_deficit = 100 }
+			subtract_from_variable = { prod_deficit = num_equipment@cv_small_plane_airframe }
+			# 需求厂数 = ceil(缺口/15)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 15 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_internal_torpedo_mountings }
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_trait_naval_aircraft_specialists
+							has_mio_trait = generic_mio_trait_maritime_duties
+						}
+					}
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = improved_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_airframe_2 version_name = "40舰载战斗机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_cvftr
+			}
+		}
+		# ===== 舰载轰炸机（cv_small_plane_naval_bomber_airframe，单厂产能基准 15，库存阈值 100） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_cvnb }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_equipment@cv_small_plane_naval_bomber_airframe < 100 }
+			}
+			set_variable = { prod_deficit = 100 }
+			subtract_from_variable = { prod_deficit = num_equipment@cv_small_plane_naval_bomber_airframe }
+			# 需求厂数 = ceil(缺口/15)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 15 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_internal_torpedo_mountings }
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_trait_naval_aircraft_specialists
+							has_mio_trait = generic_mio_trait_maritime_duties
+						}
+					}
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = advanced_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_3 version_name = "44舰载海军轰炸机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_cvnb
+			}
+			else_if = {
+				limit = { has_tech = improved_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_naval_bomber_airframe_2 version_name = "舰载海军多功能轰炸机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_cvnb
+			}
+		}
+		# ===== 舰载俯冲机（cv_small_plane_cas_airframe，单厂产能基准 15，库存阈值 100） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_cvcas }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_equipment@cv_small_plane_cas_airframe < 100 }
+			}
+			set_variable = { prod_deficit = 100 }
+			subtract_from_variable = { prod_deficit = num_equipment@cv_small_plane_cas_airframe }
+			# 需求厂数 = ceil(缺口/15)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 15 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_internal_torpedo_mountings }
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_trait_naval_aircraft_specialists
+							has_mio_trait = generic_mio_trait_maritime_duties
+						}
+					}
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = advanced_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_3 version_name = "44舰载海军俯冲机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_cvcas
+			}
+			else_if = {
+				limit = { has_tech = improved_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = cv_small_plane_cas_airframe_2 version_name = "40舰载俯冲轰炸机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_cvcas
+			}
+		}
+		# ===== 战斗机（small_plane_airframe，单厂产能基准 15，库存阈值 500） =====
+		if = {
+			limit = {
+				NOT = { has_country_flag = autocore_prod_fighter }
+				check_variable = { prod_left > 0.5 }
+				check_variable = { num_equipment@small_plane_airframe < 500 }
+			}
+			set_variable = { prod_deficit = 500 }
+			subtract_from_variable = { prod_deficit = num_equipment@small_plane_airframe }
+			# 需求厂数 = ceil(缺口/15)，下限 1
+			set_variable = { prod_want = prod_deficit }
+			divide_variable = { prod_want = 15 }
+			add_to_variable = { prod_want = 0.49 }
+			round_variable = prod_want
+			if = {
+				limit = { check_variable = { prod_want < 1 } }
+				set_variable = { prod_want = 1 }
+			}
+			# 分配 = min(需求, 剩余空闲)
+			set_variable = { prod_alloc = prod_want }
+			if = {
+				limit = { check_variable = { prod_alloc > prod_left } }
+				set_variable = { prod_alloc = prod_left }
+			}
+			set_variable = { line_mio = 0 }
+			every_military_industrial_organization = {
+				limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_interceptor }
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+			if = {
+				limit = { check_variable = { line_mio < 1 } }
+				every_military_industrial_organization = {
+					limit = {
+						is_mio_available = yes
+						OR = {
+							has_mio_trait = generic_mio_trait_fighter_expertise
+							has_mio_trait = generic_mio_trait_fighter_aircraft_specialists
+							has_mio_trait = generic_mio_trait_upgraded_air_air_weapons
+						}
+					}
+					ROOT = { set_variable = { line_mio = PREV } }
+				}
+			}
+			if = {
+				limit = { has_tech = modern_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_4 version_name = "现代战斗空优机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_fighter
+			}
+			else_if = {
+				limit = { has_tech = advanced_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_3 version_name = "44战斗机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_fighter
+			}
+			else_if = {
+				limit = { has_tech = improved_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_2 version_name = "40战斗机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_fighter
+			}
+			else_if = {
+				limit = { has_tech = basic_small_airframe }
+				if = {
+					limit = { check_variable = { line_mio > 0 } }
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 100
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 60
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 40
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 25
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 15
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 9
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 5
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 3
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 1
+							efficiency = 100
+							industrial_manufacturer = line_mio
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				else = {
+					if = {
+						limit = { check_variable = { prod_alloc > 99 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 100
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 100 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 59 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 60
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 60 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 39 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 40
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 40 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 24 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 25
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 25 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 14 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 15
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 15 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 8 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 9
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 9 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 4 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 5
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 5 }
+					}
+					else_if = {
+						limit = { check_variable = { prod_alloc > 2 } }
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 3
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 3 }
+					}
+					else = {
+						add_equipment_production = {
+							equipment = { type = small_plane_airframe_1 version_name = "36战斗机" }
+							requested_factories = 1
+							efficiency = 100
+						}
+						subtract_from_variable = { prod_left = 1 }
+					}
+				}
+				set_country_flag = autocore_prod_fighter
+			}
+		}
+	}
+	# ===== 海军：空闲船坞造舰（可重复开线；设计取自 auto_design_equipments） =====
+	if = {
+		limit = { check_variable = { num_of_available_naval_factories > 0.5 } }
+		# 开线顺序 = 队列优先级：航母 → 战列 → 轻巡 → 驱逐
+		# --- 航空母舰（5 坞/线） ---
+		set_variable = { line_mio = 0 }
+		every_military_industrial_organization = {
+			limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_carrier_flight_operations_center }
+			ROOT = { set_variable = { line_mio = PREV } }
+		}
+		if = {
+			limit = { has_tech = advanced_ship_hull_carrier }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_carrier_3 version_name = "1944航空母舰" }
+					requested_factories = 5
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_carrier_3 version_name = "1944航空母舰" }
+					requested_factories = 5
+				}
+			}
+		}
+		else_if = {
+			limit = { has_tech = improved_ship_hull_carrier }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_carrier_2 version_name = "1940航空母舰船体" }
+					requested_factories = 5
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_carrier_2 version_name = "1940航空母舰船体" }
+					requested_factories = 5
+				}
+			}
+		}
+		else_if = {
+			limit = { has_tech = basic_ship_hull_carrier }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_carrier_1 version_name = "1936航空母舰船体" }
+					requested_factories = 5
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_carrier_1 version_name = "1936航空母舰船体" }
+					requested_factories = 5
+				}
+			}
+		}
+		# --- 战列舰（5 坞/线） ---
+		set_variable = { line_mio = 0 }
+		every_military_industrial_organization = {
+			limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_super_heavy_shells }
+			ROOT = { set_variable = { line_mio = PREV } }
+		}
+		if = {
+			limit = { check_variable = { line_mio < 1 } }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					OR = {
+						has_mio_trait = generic_mio_trait_high_speed_raiding
+						has_mio_trait = generic_mio_trait_heavy_armored_hull
+					}
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+		}
+		if = {
+			limit = { has_tech = advanced_ship_hull_heavy }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_heavy_4 version_name = "1944重型战舰" }
+					requested_factories = 5
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_heavy_4 version_name = "1944重型战舰" }
+					requested_factories = 5
+				}
+			}
+		}
+		else_if = {
+			limit = { has_tech = improved_ship_hull_heavy }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_heavy_3 version_name = "1940重型战舰船体" }
+					requested_factories = 5
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_heavy_3 version_name = "1940重型战舰船体" }
+					requested_factories = 5
+				}
+			}
+		}
+		else_if = {
+			limit = { has_tech = basic_ship_hull_heavy }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_heavy_2 version_name = "1936重型战舰" }
+					requested_factories = 5
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_heavy_2 version_name = "1936重型战舰" }
+					requested_factories = 5
+				}
+			}
+		}
+		# --- 轻巡洋舰（轻炮）（10 坞/线） ---
+		set_variable = { line_mio = 0 }
+		every_military_industrial_organization = {
+			limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_transom_stern }
+			ROOT = { set_variable = { line_mio = PREV } }
+		}
+		if = {
+			limit = { check_variable = { line_mio < 1 } }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					OR = {
+						has_mio_trait = generic_mio_trait_super_heavy_shells
+						has_mio_trait = generic_mio_trait_high_speed_raiding
+					}
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+		}
+		if = {
+			limit = { has_tech = improved_ship_hull_cruiser }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_cruiser_3 version_name = "1940轻炮巡洋舰" }
+					requested_factories = 10
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_cruiser_3 version_name = "1940轻炮巡洋舰" }
+					requested_factories = 10
+				}
+			}
+		}
+		else_if = {
+			limit = { has_tech = basic_ship_hull_cruiser }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_cruiser_2 version_name = "1936轻炮巡洋" }
+					requested_factories = 10
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_cruiser_2 version_name = "1936轻炮巡洋" }
+					requested_factories = 10
+				}
+			}
+		}
+		# --- 驱逐舰（鱼雷）（10 坞/线） ---
+		set_variable = { line_mio = 0 }
+		every_military_industrial_organization = {
+			limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_fleet_escorts }
+			ROOT = { set_variable = { line_mio = PREV } }
+		}
+		if = {
+			limit = { check_variable = { line_mio < 1 } }
+			every_military_industrial_organization = {
+				limit = {
+					is_mio_available = yes
+					OR = {
+						has_mio_trait = generic_mio_trait_transom_stern
+						has_mio_trait = generic_mio_trait_high_speed_raiding
+					}
+				}
+				ROOT = { set_variable = { line_mio = PREV } }
+			}
+		}
+		if = {
+			limit = { has_tech = advanced_ship_hull_light }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_light_4 version_name = "44雷驱逐" }
+					requested_factories = 10
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_light_4 version_name = "44雷驱逐" }
+					requested_factories = 10
+				}
+			}
+		}
+		else_if = {
+			limit = { has_tech = improved_ship_hull_light }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_light_3 version_name = "40鱼雷驱逐" }
+					requested_factories = 10
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_light_3 version_name = "40鱼雷驱逐" }
+					requested_factories = 10
+				}
+			}
+		}
+		else_if = {
+			limit = { has_tech = basic_ship_hull_light }
+			if = {
+				limit = { check_variable = { line_mio > 0 } }
+				add_equipment_production = {
+					equipment = { type = ship_hull_light_2 version_name = "鱼雷驱逐36" }
+					requested_factories = 10
+					industrial_manufacturer = line_mio
+				}
+			}
+			else = {
+				add_equipment_production = {
+					equipment = { type = ship_hull_light_2 version_name = "鱼雷驱逐36" }
+					requested_factories = 10
+				}
 			}
 		}
 	}

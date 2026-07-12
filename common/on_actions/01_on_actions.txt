@@ -35,11 +35,11 @@ on_actions = {
 				add_mastery = { amount = 1 }
 				auto_research = yes
 				auto_build = yes
-				auto_production = yes
 				if = {
 					limit = { has_idea = autocore_army_no_fuel }
 					modify_timed_idea = { idea = autocore_army_no_fuel days = 1 }
 					auto_deploy_unit = yes
+					auto_production = yes
 				}
 				else = {
 					add_timed_idea = { idea = autocore_army_no_fuel days = 2 }
