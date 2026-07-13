@@ -112,7 +112,7 @@ auto_design = {
 			ROOT = { set_variable = { design_mio_sub = PREV } }
 		}
 	}
-	# 战斗机 → 高机动战斗机设计师，退而轻型飞机/通用飞机/多用途飞机
+	# 战斗机 → 高机动战斗机设计师，退而轻型飞机制造商，再退通用/多用途飞机
 	set_variable = { design_mio_fighter = 0 }
 	every_military_industrial_organization = {
 		limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_interceptor }
@@ -121,10 +121,16 @@ auto_design = {
 	if = {
 		limit = { check_variable = { design_mio_fighter < 1 } }
 		every_military_industrial_organization = {
+			limit = { is_mio_available = yes has_mio_trait = generic_mio_trait_fighter_expertise }
+			ROOT = { set_variable = { design_mio_fighter = PREV } }
+		}
+	}
+	if = {
+		limit = { check_variable = { design_mio_fighter < 1 } }
+		every_military_industrial_organization = {
 			limit = {
 				is_mio_available = yes
 				OR = {
-					has_mio_trait = generic_mio_trait_fighter_expertise
 					has_mio_trait = generic_mio_trait_fighter_aircraft_specialists
 					has_mio_trait = generic_mio_trait_upgraded_air_air_weapons
 				}
