@@ -5,8 +5,8 @@
 # 每类分配 = min(需求, 剩余空闲)，只开一条线（flag 防重复）；
 # 空闲军工 ≥ 90% 总军工视为玩家清空了队列 → 重置 flag 重新分配。
 # requested_factories 不支持变量，用 1/3/5/9/15/25/40/60/100 阶梯字面量落地；
-# 授予值永不超过剩余空闲（每条线开线前检查剩余>0），总请求 ≤ 可用军工，
-# 取整零头与分剩的工厂留给之后的分配轮次（有未开的类别时自动补开）。
+# 授予值以剩余空闲为上限，但缺少的装备保底 1 厂（剩余不足时允许小幅超配，
+# 该线先挂起，等新军工建成/释放后自动补上）；取整零头留给之后的分配轮次。
 # 海军：有空闲船坞时给战列舰/航母各开一条 5 坞线、鱼雷驱逐/轻炮巡洋各开一条 10 坞线（设计
 # 取自 auto_design_equipments）；可重复开线——船坞被吸满后不再开，新增船坞先流入未满的线。
 # MIO：产线制造商两遍择优（专业优先，原型独有 trait / 装备类型识别），无匹配则裸线。
@@ -41,7 +41,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_infantry }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@infantry_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@infantry_equipment }
@@ -797,7 +796,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_support }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@support_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@support_equipment }
@@ -1018,7 +1016,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_antitank }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@anti_tank_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@anti_tank_equipment }
@@ -1595,7 +1592,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_antiair }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@anti_air_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@anti_air_equipment }
@@ -2172,7 +2168,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_artillery }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@artillery_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@artillery_equipment }
@@ -2749,7 +2744,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_mechanized }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@mechanized_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@mechanized_equipment }
@@ -3326,7 +3320,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_motorized }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@motorized_equipment > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@motorized_equipment }
@@ -3547,7 +3540,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_flame }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@medium_tank_flame_chassis > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@medium_tank_flame_chassis }
@@ -3770,7 +3762,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_td }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@medium_tank_destroyer_chassis > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@medium_tank_destroyer_chassis }
@@ -4349,7 +4340,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_spg }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_target_equipment_in_armies@medium_tank_artillery_chassis > 0 }
 			}
 			set_variable = { prod_deficit = num_target_equipment_in_armies@medium_tank_artillery_chassis }
@@ -4572,7 +4562,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_cas }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_equipment@small_plane_cas_airframe < 300 }
 			}
 			set_variable = { prod_deficit = 300 }
@@ -5149,7 +5138,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_cvftr }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_equipment@cv_small_plane_airframe < 100 }
 			}
 			set_variable = { prod_deficit = 100 }
@@ -5370,7 +5358,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_cvnb }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_equipment@cv_small_plane_naval_bomber_airframe < 100 }
 			}
 			set_variable = { prod_deficit = 100 }
@@ -5769,7 +5756,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_cvcas }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_equipment@cv_small_plane_cas_airframe < 100 }
 			}
 			set_variable = { prod_deficit = 100 }
@@ -6168,7 +6154,6 @@ auto_production = {
 		if = {
 			limit = {
 				NOT = { has_country_flag = autocore_prod_fighter }
-				check_variable = { prod_left > 0.5 }
 				check_variable = { num_equipment@small_plane_airframe < 500 }
 			}
 			set_variable = { prod_deficit = 500 }
@@ -6938,6 +6923,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_carrier_3 version_name = "1944航空母舰" }
 					requested_factories = 5
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -6945,6 +6931,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_carrier_3 version_name = "1944航空母舰" }
 					requested_factories = 5
+					progress = 0.5
 				}
 			}
 		}
@@ -6955,6 +6942,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_carrier_2 version_name = "1940航空母舰船体" }
 					requested_factories = 5
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -6962,6 +6950,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_carrier_2 version_name = "1940航空母舰船体" }
 					requested_factories = 5
+					progress = 0.5
 				}
 			}
 		}
@@ -6972,6 +6961,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_carrier_1 version_name = "1936航空母舰船体" }
 					requested_factories = 5
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -6979,6 +6969,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_carrier_1 version_name = "1936航空母舰船体" }
 					requested_factories = 5
+					progress = 0.5
 				}
 			}
 		}
@@ -7008,6 +6999,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_heavy_4 version_name = "1944重型战舰" }
 					requested_factories = 5
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7015,6 +7007,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_heavy_4 version_name = "1944重型战舰" }
 					requested_factories = 5
+					progress = 0.5
 				}
 			}
 		}
@@ -7025,6 +7018,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_heavy_3 version_name = "1940重型战舰船体" }
 					requested_factories = 5
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7032,6 +7026,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_heavy_3 version_name = "1940重型战舰船体" }
 					requested_factories = 5
+					progress = 0.5
 				}
 			}
 		}
@@ -7042,6 +7037,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_heavy_2 version_name = "1936重型战舰" }
 					requested_factories = 5
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7049,6 +7045,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_heavy_2 version_name = "1936重型战舰" }
 					requested_factories = 5
+					progress = 0.5
 				}
 			}
 		}
@@ -7078,6 +7075,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_cruiser_3 version_name = "1940轻炮巡洋舰" }
 					requested_factories = 10
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7085,6 +7083,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_cruiser_3 version_name = "1940轻炮巡洋舰" }
 					requested_factories = 10
+					progress = 0.5
 				}
 			}
 		}
@@ -7095,6 +7094,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_cruiser_2 version_name = "1936轻炮巡洋" }
 					requested_factories = 10
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7102,6 +7102,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_cruiser_2 version_name = "1936轻炮巡洋" }
 					requested_factories = 10
+					progress = 0.5
 				}
 			}
 		}
@@ -7131,6 +7132,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_light_4 version_name = "44雷驱逐" }
 					requested_factories = 10
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7138,6 +7140,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_light_4 version_name = "44雷驱逐" }
 					requested_factories = 10
+					progress = 0.5
 				}
 			}
 		}
@@ -7148,6 +7151,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_light_3 version_name = "40鱼雷驱逐" }
 					requested_factories = 10
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7155,6 +7159,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_light_3 version_name = "40鱼雷驱逐" }
 					requested_factories = 10
+					progress = 0.5
 				}
 			}
 		}
@@ -7165,6 +7170,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_light_2 version_name = "鱼雷驱逐36" }
 					requested_factories = 10
+					progress = 0.5
 					industrial_manufacturer = line_mio
 				}
 			}
@@ -7172,6 +7178,7 @@ auto_production = {
 				add_equipment_production = {
 					equipment = { type = ship_hull_light_2 version_name = "鱼雷驱逐36" }
 					requested_factories = 10
+					progress = 0.5
 				}
 			}
 		}

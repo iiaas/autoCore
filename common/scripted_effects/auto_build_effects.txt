@@ -5,7 +5,7 @@
 #
 # 阶段（build_phase）：
 #   3 战争期：has_war 或 世界紧张度>75% → 军工为主；有船坞的国家 军:船=2:1
-#   2 备战期：紧张度>25% 或 过备战日（早战国 中日满军阀=1937.1.1，其他=1938.1.1）→ 民:军:船=1:2:1
+#   2 备战期：紧张度>25% 或 过备战日（早战国 中日满军阀=1937.1.1，其他=1938.1.1）→ 民:军:船=1:1:1
 #   1 扩张期：其余 → 全民工（吃复利）
 #
 # 州优先级（扫描顺序=入队顺序）：
@@ -14,7 +14,6 @@
 #   P3 空槽≥5 且基建未满 → 造基建（剩余工程多，提速回本：基建3000省约750/厂）
 #   P4 基建4级、空槽1-4 → 按阶段造厂（拉基建不回本，直接造）
 #   P5 基建≤3、空槽1-4 → 按阶段造厂
-#   P6 完全满建 → increase_state_category 升地区类型解锁新槽（免费，不占配额）
 #
 # 队列中的建筑占用建造槽，free_building_slots 随之减少，每月重跑不会重复排队。
 # 调用方需为国家 scope，由 on_monthly 调用。
@@ -61,10 +60,10 @@ auto_build = {
 	}
 
 	# ---- 轮换指针 ----
-	# 备战期 民:军:船=1:2:1：prep_cycle 取 1(民),2-3(军),4(船，海军国；内陆国第4天照常军工)
+	# 备战期 民:军:船=1:1:1：prep_cycle 取 1(民),2(军),3(船，海军国；内陆国第3天照常军工)
 	add_to_variable = { prep_cycle = 1 }
 	if = {
-		limit = { check_variable = { prep_cycle > 4 } }
+		limit = { check_variable = { prep_cycle > 3 } }
 		set_variable = { prep_cycle = 1 }
 	}
 	# 战争期 军:船=2:1（仅海军国）：war_cycle 取 1-2(军),3(船)
@@ -110,7 +109,7 @@ auto_build = {
 				ROOT = { check_variable = { prep_cycle > 1 } }
 				ROOT = {
 					OR = {
-						check_variable = { prep_cycle < 4 }
+						check_variable = { prep_cycle < 3 }
 						num_of_naval_factories < 1
 					}
 				}
@@ -120,7 +119,7 @@ auto_build = {
 			ROOT = { subtract_from_variable = { build_quota = 1 } }
 		}
 		else_if = {
-			# 海军国轮到船坞（沿海州；备战期第4天、战争期第3天）
+			# 海军国轮到船坞（沿海州；备战期第3天、战争期第3天）
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
 				ROOT = { num_of_naval_factories > 0 }
@@ -128,7 +127,7 @@ auto_build = {
 					OR = {
 						AND = {
 							check_variable = { build_phase = 2 }
-							check_variable = { prep_cycle = 4 }
+							check_variable = { prep_cycle = 3 }
 						}
 						AND = {
 							check_variable = { build_phase = 3 }
@@ -231,7 +230,7 @@ auto_build = {
 				ROOT = { check_variable = { prep_cycle > 1 } }
 				ROOT = {
 					OR = {
-						check_variable = { prep_cycle < 4 }
+						check_variable = { prep_cycle < 3 }
 						num_of_naval_factories < 1
 					}
 				}
@@ -248,7 +247,7 @@ auto_build = {
 					OR = {
 						AND = {
 							check_variable = { build_phase = 2 }
-							check_variable = { prep_cycle = 4 }
+							check_variable = { prep_cycle = 3 }
 						}
 						AND = {
 							check_variable = { build_phase = 3 }
@@ -308,7 +307,7 @@ auto_build = {
 				ROOT = { check_variable = { prep_cycle > 1 } }
 				ROOT = {
 					OR = {
-						check_variable = { prep_cycle < 4 }
+						check_variable = { prep_cycle < 3 }
 						num_of_naval_factories < 1
 					}
 				}
@@ -325,7 +324,7 @@ auto_build = {
 					OR = {
 						AND = {
 							check_variable = { build_phase = 2 }
-							check_variable = { prep_cycle = 4 }
+							check_variable = { prep_cycle = 3 }
 						}
 						AND = {
 							check_variable = { build_phase = 3 }
@@ -348,20 +347,6 @@ auto_build = {
 			add_building_construction = { type = arms_factory level = 1 instant_build = no }
 			ROOT = { subtract_from_variable = { build_quota = 1 } }
 		}
-	}
-
-	# ===== P6：完全满建 → 升地区类型解锁新槽（免费，不占配额） =====
-	every_owned_state = {
-		limit = {
-			is_fully_controlled_by = ROOT
-			is_core_of = ROOT
-			free_building_slots = { building = infrastructure size < 1 }
-			free_building_slots = { building = industrial_complex size < 1 }
-			NOT = { has_state_category = megalopolis }
-			NOT = { has_state_category = large_island }
-			NOT = { has_state_category = wasteland }
-		}
-		increase_state_category = yes
 	}
 
 	# ===== 补资源（原 auto_farm_build 并入） =====
