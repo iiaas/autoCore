@@ -4,16 +4,17 @@
 #       为 0 时本月不排队。配额判断放各分支 limit 内逐州求值即时扣减。
 #
 # 阶段（build_phase）：
-#   3 战争期：has_war 或 世界紧张度>75% → 军工为主；有船坞的国家 军:船=2:1
-#   2 备战期：紧张度>25% 或 过备战日（早战国 中日满军阀=1937.1.1，其他=1938.1.1）→ 民:军:船=1:1:1
+#   2 备战/战争期：紧张度>25% 或 has_war 或 过备战日（早战国 中日满军阀=1937.1.1，其他=1938.1.1）
+#     → 军:船=1:1；军厂 > 民厂 时 民:军:船=1:1:1；船坞 > 40 或无船坞国家 → 跳过船坞轮次
 #   1 扩张期：其余 → 全民工（吃复利）
 #
 # 州优先级（扫描顺序=入队顺序）：
 #   P1 基建5级有空槽 → 按阶段造厂（基建满=造最快，先吃配额）
 #   P2 大坝州基建未满 → 造基建
-#   P3 空槽≥5 且基建未满 → 造基建（剩余工程多，提速回本：基建3000省约750/厂）
-#   P4 基建4级、空槽1-4 → 按阶段造厂（拉基建不回本，直接造）
-#   P5 基建≤3、空槽1-4 → 按阶段造厂
+#   P3 沿海、基建3级、空槽>3 → 造基建（解锁更多船坞/工厂位，优先于 P4 空槽≥5 的普适规则）
+#   P4 空槽≥5 且基建未满（P3 未覆盖部分）→ 造基建（剩余工程多，提速回本：基建3000省约750/厂）
+#   P5 基建4级、空槽1-4 → 按阶段造厂（拉基建不回本，直接造）
+#   P6 基建≤3（P3 未覆盖的内陆/低级州）、空槽1-4 → 按阶段造厂
 #
 # 队列中的建筑占用建造槽，free_building_slots 随之减少，每月重跑不会重复排队。
 # 调用方需为国家 scope，由 on_monthly 调用。
@@ -24,12 +25,13 @@ auto_build = {
 	add_to_variable = { build_quota = 0.49 }
 	round_variable = build_quota
 
-	# ---- 阶段判定 ----
+	# ---- 阶段判定（备战与战争同规则，合并为一档）----
 	set_variable = { build_phase = 1 }
 	if = {
 		limit = {
 			OR = {
 				threat > 0.25
+				has_war = yes
 				date > 1938.1.1
 				AND = {
 					date > 1937.1.1
@@ -49,28 +51,51 @@ auto_build = {
 		}
 		set_variable = { build_phase = 2 }
 	}
-	if = {
-		limit = {
-			OR = {
-				has_war = yes
-				threat > 0.75
-			}
-		}
-		set_variable = { build_phase = 3 }
-	}
 
-	# ---- 轮换指针 ----
-	# 备战期 民:军:船=1:1:1：prep_cycle 取 1(民),2(军),3(船，海军国；内陆国第3天照常军工)
-	add_to_variable = { prep_cycle = 1 }
+	# ---- 轮换指针（备战/战争期）----
+	# 轮换成员：军(必有，恒排最后) + 民(军厂>民厂时，恒排最前) + 船(海军国且船坞≤40，排民后军前)；
+	# 成员缺席则跳过该轮次（轮换长度 1-3 动态）。build_pick：1=民, 2=军, 3=船。
 	if = {
-		limit = { check_variable = { prep_cycle > 3 } }
-		set_variable = { prep_cycle = 1 }
-	}
-	# 战争期 军:船=2:1（仅海军国）：war_cycle 取 1-2(军),3(船)
-	add_to_variable = { war_cycle = 1 }
-	if = {
-		limit = { check_variable = { war_cycle > 3 } }
-		set_variable = { war_cycle = 1 }
+		limit = { check_variable = { build_phase > 1 } }
+		set_variable = { civ_in = 0 }
+		if = {
+			limit = { check_variable = { num_of_military_factories > num_of_civilian_factories } }
+			set_variable = { civ_in = 1 }
+		}
+		set_variable = { dock_in = 0 }
+		if = {
+			limit = {
+				num_of_naval_factories > 0
+				num_of_naval_factories < 41
+			}
+			set_variable = { dock_in = 1 }
+		}
+		set_variable = { cycle_len = 1 }
+		add_to_variable = { cycle_len = civ_in }
+		add_to_variable = { cycle_len = dock_in }
+		add_to_variable = { build_rot = 1 }
+		if = {
+			limit = { check_variable = { build_rot > cycle_len } }
+			set_variable = { build_rot = 1 }
+		}
+		# 船坞位次 = 民(若在)之后一位；军恒为默认/末位
+		set_variable = { dock_pos = civ_in }
+		add_to_variable = { dock_pos = 1 }
+		set_variable = { build_pick = 2 }
+		if = {
+			limit = {
+				check_variable = { civ_in = 1 }
+				check_variable = { build_rot = 1 }
+			}
+			set_variable = { build_pick = 1 }
+		}
+		if = {
+			limit = {
+				check_variable = { dock_in = 1 }
+				check_variable = { build_rot = dock_pos }
+			}
+			set_variable = { build_pick = 3 }
+		}
 	}
 
 	# ===== P1：基建5级的州 → 按阶段造厂 =====
@@ -91,50 +116,33 @@ auto_build = {
 			ROOT = { subtract_from_variable = { build_quota = 1 } }
 		}
 		else_if = {
-			# 备战期·轮到民用
+			# 备战/战争期·轮到民用（军厂>民厂时加入轮换）
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 2 } }
-				ROOT = { check_variable = { prep_cycle = 1 } }
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 1 } }
 				free_building_slots = { building = industrial_complex size > 0 }
 			}
 			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
 			ROOT = { subtract_from_variable = { build_quota = 1 } }
 		}
 		else_if = {
-			# 备战期·轮到军工
+			# 备战/战争期·轮到军工
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 2 } }
-				ROOT = { check_variable = { prep_cycle > 1 } }
-				ROOT = {
-					OR = {
-						check_variable = { prep_cycle < 3 }
-						num_of_naval_factories < 1
-					}
-				}
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 2 } }
 				free_building_slots = { building = arms_factory size > 0 }
 			}
 			add_building_construction = { type = arms_factory level = 1 instant_build = no }
 			ROOT = { subtract_from_variable = { build_quota = 1 } }
 		}
 		else_if = {
-			# 海军国轮到船坞（沿海州；备战期第3天、战争期第3天）
+			# 轮到船坞（沿海州）
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { num_of_naval_factories > 0 }
-				ROOT = {
-					OR = {
-						AND = {
-							check_variable = { build_phase = 2 }
-							check_variable = { prep_cycle = 3 }
-						}
-						AND = {
-							check_variable = { build_phase = 3 }
-							check_variable = { war_cycle = 3 }
-						}
-					}
-				}
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 3 } }
 				is_coastal = yes
 				free_building_slots = { building = dockyard size > 0 }
 			}
@@ -142,10 +150,11 @@ auto_build = {
 			ROOT = { subtract_from_variable = { build_quota = 1 } }
 		}
 		else_if = {
-			# 战争期·军工
+			# 船坞日兜底：本州建不了船坞（内陆/无槽）→ 军工
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 3 } }
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 3 } }
 				free_building_slots = { building = arms_factory size > 0 }
 			}
 			add_building_construction = { type = arms_factory level = 1 instant_build = no }
@@ -174,7 +183,29 @@ auto_build = {
 		}
 	}
 
-	# ===== P3：空槽≥5 且基建未满 → 造基建（提速回本） =====
+	# ===== P3：沿海、基建3级、空槽>3 → 造基建（解锁更多船坞/工厂位，优先于 P4 空槽≥5 的普适规则） =====
+	every_owned_state = {
+		limit = {
+			is_fully_controlled_by = ROOT
+			is_core_of = ROOT
+			is_coastal = yes
+			infrastructure > 2
+			infrastructure < 4
+			dam < 1
+			dam_mountain < 1
+			free_building_slots = { building = industrial_complex size > 3 }
+		}
+		if = {
+			limit = {
+				ROOT = { check_variable = { build_quota > 0 } }
+				free_building_slots = { building = infrastructure size > 0 }
+			}
+			add_building_construction = { type = infrastructure level = 1 instant_build = no }
+			ROOT = { subtract_from_variable = { build_quota = 1 } }
+		}
+	}
+
+	# ===== P4：空槽≥5 且基建未满（P3 未覆盖部分） → 造基建（提速回本） =====
 	every_owned_state = {
 		limit = {
 			is_fully_controlled_by = ROOT
@@ -194,7 +225,7 @@ auto_build = {
 		}
 	}
 
-	# ===== P4：基建4级、空槽1-4 → 按阶段造厂 =====
+	# ===== P5：基建4级、空槽1-4 → 按阶段造厂 =====
 	every_owned_state = {
 		limit = {
 			is_fully_controlled_by = ROOT
@@ -216,8 +247,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 2 } }
-				ROOT = { check_variable = { prep_cycle = 1 } }
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 1 } }
 				free_building_slots = { building = industrial_complex size > 0 }
 			}
 			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
@@ -226,14 +257,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 2 } }
-				ROOT = { check_variable = { prep_cycle > 1 } }
-				ROOT = {
-					OR = {
-						check_variable = { prep_cycle < 3 }
-						num_of_naval_factories < 1
-					}
-				}
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 2 } }
 				free_building_slots = { building = arms_factory size > 0 }
 			}
 			add_building_construction = { type = arms_factory level = 1 instant_build = no }
@@ -242,19 +267,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { num_of_naval_factories > 0 }
-				ROOT = {
-					OR = {
-						AND = {
-							check_variable = { build_phase = 2 }
-							check_variable = { prep_cycle = 3 }
-						}
-						AND = {
-							check_variable = { build_phase = 3 }
-							check_variable = { war_cycle = 3 }
-						}
-					}
-				}
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 3 } }
 				is_coastal = yes
 				free_building_slots = { building = dockyard size > 0 }
 			}
@@ -264,7 +278,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 3 } }
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 3 } }
 				free_building_slots = { building = arms_factory size > 0 }
 			}
 			add_building_construction = { type = arms_factory level = 1 instant_build = no }
@@ -272,7 +287,7 @@ auto_build = {
 		}
 	}
 
-	# ===== P5：基建≤3、空槽1-4 → 按阶段造厂 =====
+	# ===== P6：基建≤3、空槽1-4 → 按阶段造厂 =====
 	every_owned_state = {
 		limit = {
 			is_fully_controlled_by = ROOT
@@ -293,8 +308,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 2 } }
-				ROOT = { check_variable = { prep_cycle = 1 } }
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 1 } }
 				free_building_slots = { building = industrial_complex size > 0 }
 			}
 			add_building_construction = { type = industrial_complex level = 1 instant_build = no }
@@ -303,14 +318,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 2 } }
-				ROOT = { check_variable = { prep_cycle > 1 } }
-				ROOT = {
-					OR = {
-						check_variable = { prep_cycle < 3 }
-						num_of_naval_factories < 1
-					}
-				}
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 2 } }
 				free_building_slots = { building = arms_factory size > 0 }
 			}
 			add_building_construction = { type = arms_factory level = 1 instant_build = no }
@@ -319,19 +328,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { num_of_naval_factories > 0 }
-				ROOT = {
-					OR = {
-						AND = {
-							check_variable = { build_phase = 2 }
-							check_variable = { prep_cycle = 3 }
-						}
-						AND = {
-							check_variable = { build_phase = 3 }
-							check_variable = { war_cycle = 3 }
-						}
-					}
-				}
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 3 } }
 				is_coastal = yes
 				free_building_slots = { building = dockyard size > 0 }
 			}
@@ -341,7 +339,8 @@ auto_build = {
 		else_if = {
 			limit = {
 				ROOT = { check_variable = { build_quota > 0 } }
-				ROOT = { check_variable = { build_phase = 3 } }
+				ROOT = { check_variable = { build_phase > 1 } }
+				ROOT = { check_variable = { build_pick = 3 } }
 				free_building_slots = { building = arms_factory size > 0 }
 			}
 			add_building_construction = { type = arms_factory level = 1 instant_build = no }
