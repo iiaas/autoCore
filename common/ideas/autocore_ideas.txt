@@ -5,12 +5,7 @@ ideas = {
 			allowed_civil_war = { always = yes }
 			removal_cost = -1
 			modifier = {
-				army_fuel_capacity_factor = -2
-				army_fuel_consumption_factor = -1
-				air_fuel_consumption_factor = -1
- 				navy_fuel_consumption_factor = -1
 				special_forces_cap_flat = 1000
-				resistance_target = -1
 				compliance_gain = 0.1
 				subjects_autonomy_gain = -10
 			}

@@ -2987,7 +2987,6 @@ auto_design = {
 	division_template = {
 		name = "Infanterie-Division"
 		template_counter = 119
-		priority = 2
 		regiments = {
 			ranger_battalion = { x = 0 y = 0 }
 			ranger_battalion = { x = 0 y = 1 }
@@ -3000,11 +2999,11 @@ auto_design = {
 			ranger_battalion = { x = 2 y = 2 }
 		}
 		support = {
-			engineer = { x = 0 y = 0 }
+			medium_flame_tank = { x = 0 y = 0 }
 			medium_flame_tank = { x = 0 y = 1 }
-			blackshirt_assault_battalion = { x = 0 y = 2 }
-			sturmtruppe_battalion = { x = 0 y = 3 }
-			rangers_support = { x = 0 y = 4 }
+			medium_flame_tank = { x = 0 y = 2 }
+			medium_flame_tank = { x = 0 y = 3 }
+			medium_flame_tank = { x = 0 y = 4 }
 		}
 		regimental_support = {
 			field_guns = { x = 0 y = 0 }
