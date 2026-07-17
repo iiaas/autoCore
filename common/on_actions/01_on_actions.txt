@@ -7,8 +7,14 @@ on_actions = {
 				auto_build = yes
 				auto_focus_shine = yes
 				auto_production_naval = yes
-				auto_mio_complete_trait = yes
-				auto_design = yes
+				# 设计/MIO 只执行一次（永久 flag 复刻原 autocore_army_no_fuel idea 的
+				# "加上就永不过期"节奏）：auto_design 重复执行会不断重复创建变体/师模板
+				if = {
+					limit = { NOT = { has_country_flag = auto_design_done } }
+					auto_mio_complete_trait = yes
+					auto_design = yes
+					set_country_flag = auto_design_done
+				}
 			}
 		}
 	}
