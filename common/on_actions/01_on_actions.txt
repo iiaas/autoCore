@@ -1,13 +1,4 @@
 on_actions = {
-	on_army_leader_daily = {
-		effect = {
-			if = {
-				limit = { FROM = { is_ai = no } }
-				supply_units = 24
-			}
-		}
-	}
-
 	on_daily = {
 		effect = {
 			if = {
@@ -15,17 +6,9 @@ on_actions = {
 				auto_research = yes
 				auto_build = yes
 				auto_focus_shine = yes
-				if = {
-					limit = { has_idea = autocore_army_no_fuel }
-					modify_timed_idea = { idea = autocore_army_no_fuel days = 1 }
-					auto_production_naval = yes
-				}
-				else = {
-					add_timed_idea = { idea = autocore_army_no_fuel days = 2 }
-					add_daily_mastery = { amount = 1 days = 2000 }
-					auto_mio_complete_trait = yes
-					auto_design = yes
-				}
+				auto_production_naval = yes
+				auto_mio_complete_trait = yes
+				auto_design = yes
 			}
 		}
 	}
