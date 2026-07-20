@@ -1,20 +1,23 @@
-# 中国德械师沙漠版实体：作用于 CHI_infantry_alt_0_entity 系列（不是默认兵模），
-# 命名遵循原版 alt+气候后缀约定（引擎按 "<entity>_alt_0_entity_desert" 自动识别，
-# 参照原版 FIN_infantry_alt_0_entity_desert / gfx/entities/units_infantry.asset 的写法）。
-# 全新实体名字，不与任何原版实体冲突，不覆盖任何原版文件。
+# 中国德械师兵模：不替换默认兵模，覆盖 CHI_infantry_alt_0_entity / CHI_infantry_2_alt_0_entity
+# 这两个原版已有的实体（同名覆盖），并新增 CHI_infantry_3_alt_0_entity（原版没有，仿照
+# CHI_infantry_3_entity 的写法，克隆_2_alt_0补上突击档位）。
+# 相对原版多的改动：
+#   - move / march_move 的 animation_blend_time 由 1.0 改成 0.0（跟德国基础模板 infantry_2_entity 一致，
+#     避免换装后武器道具在待机->移动过渡混合期间穿模）
+#   - 三档(3_alt_0)手部/背部挂点换成德国 StG44(MP43) 道具实体（GER_infantry_weapon_mg_2_*_entity）
 entity = {
-	name = "CHI_infantry_alt_0_entity_desert"
-	pdxmesh = "CHI_ger_desert_rifle_mesh"
+	name = "CHI_infantry_alt_0_entity"
+	pdxmesh = "CHI_infantry_rifle_mesh"
 
 	default_state = "idle"
 	state = { name = "attack"			animation = "charge_rifle" 					animation_blend_time = 0.0  animation_speed = 1.0 looping = no next_state = "attack" chance = 2 propagate_state = { rifle2 = "idle" } }
 	state = { name = "attack"			animation = "charge_rifle_shoot" 			animation_blend_time = 0.0  animation_speed = 1.0 looping = no next_state = "attack" chance = 1 }
 	state = { name = "defend"			animation = "attack" 			animation_blend_time = 0.3  animation_speed = 1.0 }
 	state = { name = "support_attack"	animation = "support_attack" 	animation_blend_time = 0.3 animation_speed = 1.0 }
-	state = { name = "move"				animation = "move" 		 		animation_blend_time = 1.0 animation_speed = 1.0 chance = 1
+	state = { name = "move"				animation = "move" 		 		animation_blend_time = 0.0 animation_speed = 1.0 chance = 1
 		event = { sound = { soundeffect = "infantry_move_animation" } }
 	}
-	state = { name = "move"				animation = "march_move" 		 		animation_blend_time = 1.0 animation_speed = 1.0 chance = 1
+	state = { name = "move"				animation = "march_move" 		 		animation_blend_time = 0.0 animation_speed = 1.0 chance = 1
 		event = { sound = { soundeffect = "infantry_move_animation" } }
 	}
 	state = { name = "retreat"			animation = "retreat"		 	animation_blend_time = 0.3 animation_speed = 1.0 }
@@ -47,8 +50,8 @@ entity = {
 }
 
 entity = {
-	name = "CHI_infantry_2_alt_0_entity_desert"
-	pdxmesh = "CHI_ger_desert_mg_mesh"
+	name = "CHI_infantry_2_alt_0_entity"
+	pdxmesh = "CHI_infantry_mg_mesh"
 
 	default_state = "idle"
 	state = { name = "attack"			animation = "charge_mg" 					animation_blend_time = 0.0  animation_speed = 1.0 looping = no next_state = "attack" chance = 2 propagate_state = { rifle1 = "idle" } }
@@ -91,8 +94,8 @@ entity = {
 }
 
 entity = {
-	name = "CHI_infantry_3_alt_0_entity_desert"
-	pdxmesh = "CHI_ger_desert_mg_mesh"
+	name = "CHI_infantry_3_alt_0_entity"
+	pdxmesh = "CHI_infantry_mg_mesh"
 
 	default_state = "idle"
 	state = { name = "attack"			animation = "charge_mg" 					animation_blend_time = 0.0  animation_speed = 1.0 looping = no next_state = "attack" chance = 2 propagate_state = { rifle1 = "idle" } }
