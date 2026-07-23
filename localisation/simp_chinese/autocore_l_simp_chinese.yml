@@ -1,3 +1,0 @@
-﻿l_simp_chinese:
- autocore_focus_in_progress_tt: "§Y自动推进中§!。\n进度：§Y[?autocore_focus_days|.0]§!/[?autocore_focus_total|.0]天"
- autocore_focus_paused_tt: "§Y自动推进已暂停§!（你正在手动推进国策）。\n进度：§Y[?autocore_focus_days|.0]§!/[?autocore_focus_total|.0]天"

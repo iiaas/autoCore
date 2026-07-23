@@ -6,6 +6,10 @@ on_actions = {
 				auto_research = yes
 				auto_build = yes
 				auto_focus_shine = yes
+				# 供决议倒计时使用：剩余天数 = 总天数 - 已推进天数（决议任务在暂停后重新激活时
+				# 以此为 days_mission_timeout，从正确的剩余天数继续倒数）
+				set_variable = { autocore_focus_remaining = autocore_focus_total }
+				subtract_from_variable = { autocore_focus_remaining = autocore_focus_days }
 				auto_production_naval = yes
 				auto_mio_complete_trait = yes
 				# 设计/MIO 只执行一次（永久 flag 复刻原 autocore_army_no_fuel idea 的
